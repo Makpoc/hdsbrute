@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/makpoc/hdsbrute/commands/gsheet"
+
 	"github.com/makpoc/hdsbrute"
 	"github.com/makpoc/hdsbrute/commands/coffee"
 	"github.com/makpoc/hdsbrute/commands/frosty"
@@ -14,7 +16,7 @@ import (
 var token string
 
 var botID string
-var botPrefix = "!"
+var botPrefix string
 
 var (
 	dbUser string
@@ -37,6 +39,7 @@ func main() {
 	brute.AddCommand(coffee.CoffeeCommand)
 	brute.AddCommand(sheet.SheetCommand)
 	brute.AddCommand(wsmap.WsCommand)
+	brute.AddCommand(gsheet.TimeZoneCommand)
 
 	fmt.Println("Bot is running")
 
@@ -49,13 +52,14 @@ func main() {
 
 // initEnv initializes the application from the environment
 func initEnv() {
+	botPrefix = hdsbrute.GetEnvPropOrDefault("botPrefix", "!")
 	token = hdsbrute.GetEnvPropOrDefault("BOT_TOKEN", "")
 
 	dbPass = hdsbrute.GetEnvPropOrDefault("dbPass", "")
 	dbName = hdsbrute.GetEnvPropOrDefault("dbName", "")
 	dbUser = hdsbrute.GetEnvPropOrDefault("dbUser", "")
-
 }
+
 func printAndExit(err error) {
 	fmt.Printf("%v\n", err)
 	os.Exit(1)

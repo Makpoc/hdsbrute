@@ -7,11 +7,6 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-// Initer is an interface with Init method
-type Initer interface {
-	Init()
-}
-
 // Brute ...
 type Brute struct {
 	Prefix   string
