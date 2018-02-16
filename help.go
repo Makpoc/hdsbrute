@@ -27,8 +27,8 @@ func DisplayHelp(b *Brute, s *discordgo.Session, m *discordgo.MessageCreate, c [
 
 // DisplayCommandHelp displays the help for a concrete command
 func DisplayCommandHelp(b *Brute, s *discordgo.Session, m *discordgo.MessageCreate, cmd *Command) {
-	if cmd.HelpFn != nil {
-		cmd.HelpFn(b, s, m)
+	if cmd.HelpFunc != nil {
+		cmd.HelpFunc(b, s, m)
 		return
 	}
 

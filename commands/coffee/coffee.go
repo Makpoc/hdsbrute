@@ -2,6 +2,7 @@ package coffee
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/makpoc/hdsbrute"
@@ -11,8 +12,8 @@ import (
 var CoffeeCommand = hdsbrute.Command{
 	Cmd:     "coffee",
 	HelpStr: "Coffee is Love, Coffe is Life",
-	Init: func() error {
-		fmt.Println("Coffee brewing!")
+	Init: func(b *hdsbrute.Brute) error {
+		log.Println("Coffee brewing!")
 		return nil
 	},
 	Exec: coffeeHandler,
@@ -31,6 +32,6 @@ func coffeeHandler(s *discordgo.Session, m *discordgo.MessageCreate, query []str
     **8.** Give to someone else and get a :beer: or 3
     **9.** Enjoy :beers:`, m.Author.Mention()))
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 	}
 }

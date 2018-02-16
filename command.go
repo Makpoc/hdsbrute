@@ -7,10 +7,10 @@ type HandlerFn func(*discordgo.Session, *discordgo.MessageCreate, []string)
 
 // Command represents a command
 type Command struct {
-	Cmd     string
-	Args    []string
-	HelpStr string
-	HelpFn  func(*Brute, *discordgo.Session, *discordgo.MessageCreate)
-	Init    func() error
-	Exec    HandlerFn
+	Cmd      string
+	Args     []string
+	HelpStr  string
+	HelpFunc func(*Brute, *discordgo.Session, *discordgo.MessageCreate)
+	Init     func(*Brute) error
+	Exec     HandlerFn
 }

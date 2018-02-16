@@ -2,6 +2,7 @@ package hdsbrute
 
 import (
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
@@ -13,19 +14,21 @@ type Brute struct {
 	BotID    string
 	Session  *discordgo.Session
 	Commands []Command
+	Config   *Config
 }
 
 // New ...
-func New(prefix, token string) (*Brute, error) {
+func New(token string) (*Brute, error) {
 	s, err := discordgo.New("Bot " + token)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect: %v", err)
 	}
 
 	var brute = &Brute{}
+	brute.loadConfig()
 
 	brute.Session = s
-	brute.Prefix = prefix
+	brute.Prefix = brute.Config.BotPrefix
 	brute.Commands = []Command{}
 
 	u, err := s.User("@me")
@@ -37,15 +40,26 @@ func New(prefix, token string) (*Brute, error) {
 	return brute, nil
 }
 
+// loadConfig loads the configuration from the environment into the brute struct
+func (b *Brute) loadConfig() {
+	b.Config = &Config{
+		BackendURL: GetEnvPropOrDefault("BACKEND_URL", "http://localhost"),
+		Secret:     GetEnvPropOrDefault("SECRET", ""),
+		BotPrefix:  GetEnvPropOrDefault("BOT_PREFIX", "."),
+	}
+}
+
 // AddCommand ...
 func (b *Brute) AddCommand(cmd Command) {
-	err := cmd.Init()
-	if err != nil {
-		fmt.Printf("failed to initialize command %s: %v\n", cmd.Cmd, err)
-		return
+	if cmd.Init != nil {
+		err := cmd.Init(b)
+		if err != nil {
+			log.Printf("failed to initialize command %s: %v\n", cmd.Cmd, err)
+			return
+		}
 	}
 	b.Commands = append(b.Commands, cmd)
-	fmt.Printf("Added %s to commands list\n", cmd.Cmd)
+	log.Printf("Added %s to commands list\n", cmd.Cmd)
 }
 
 // Dispatch ...

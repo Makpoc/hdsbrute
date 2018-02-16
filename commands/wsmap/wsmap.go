@@ -2,6 +2,7 @@ package wsmap
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"strings"
 
@@ -23,13 +24,13 @@ const cmd = "map"
 
 // WsCommand ...
 var WsCommand = hdsbrute.Command{
-	Cmd:    cmd,
-	HelpFn: helpFunc,
-	Init: func() error {
-		backendSecret = hdsbrute.GetEnvPropOrDefault("secret", "")
-		backendURL = hdsbrute.GetEnvPropOrDefault("backendURL", "http://localhost:8080")
+	Cmd:      cmd,
+	HelpFunc: helpFunc,
+	Init: func(b *hdsbrute.Brute) error {
+		backendSecret = b.Config.Secret
+		backendURL = b.Config.BackendURL
 
-		fmt.Println("Map initialized")
+		log.Println("Map initialized")
 		return nil
 	},
 	Exec: mapHandlerFn,
@@ -61,28 +62,33 @@ func mapHandlerFn(s *discordgo.Session, m *discordgo.MessageCreate, query []stri
 	mCommand := parseMapCommand(query)
 	mCommand.author = m.Author.Username
 
-	url := fmt.Sprintf("%s/map?secret=%s", backendURL, backendSecret)
+	url := fmt.Sprintf("%s/api/v1/map?secret=%s", backendURL, backendSecret)
 	if len(mCommand.args) > 0 {
 		url = fmt.Sprintf("%s&coords=%s", url, strings.Join(mCommand.args, ","))
 	}
 
 	resp, err := http.Get(url)
-	if err != nil || resp.StatusCode != http.StatusOK {
-		fmt.Printf("Failed to get map - got %s. Error was: %v\n", resp.Status, err)
-		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf(":flushed: Failed to get map - %s", resp.Status))
+	if err != nil {
+		log.Printf("Failed to get map. Error was: %v\n", err)
+		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf(":flushed: Failed to get map"))
 		return
 	}
 	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		log.Printf("Unexpected status code: %v\n", resp.Status)
+		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf(":flushed: Failed to get map"))
+		return
+	}
 
 	err = sendDiscordResponse(s, m, resp, mCommand)
 	if err != nil {
-		fmt.Println("Something went wrong while sending Discord response", err)
+		log.Println("Something went wrong while sending Discord response", err)
 		return
 	}
 
 	err = s.ChannelMessageDelete(m.ChannelID, m.ID)
 	if err != nil {
-		fmt.Println("Failed to delete trigger message", err)
+		log.Println("Failed to delete trigger message", err)
 	}
 }
 

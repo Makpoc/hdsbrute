@@ -3,50 +3,71 @@ package gsheet
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/makpoc/hades-sheet/models"
+	"github.com/makpoc/hades-api/sheet/models"
 	"github.com/makpoc/hdsbrute"
 )
 
 var backendURL string
 var backendSecret string
 
+const cmd = "tz"
+
 // TimeZoneCommand ...
 var TimeZoneCommand = hdsbrute.Command{
-	Cmd:     "tz",
-	HelpStr: "TODO",
-	Init: func() error {
-		backendSecret = hdsbrute.GetEnvPropOrDefault("secret", "")
-		backendURL = hdsbrute.GetEnvPropOrDefault("tzURL", "http://localhost:3000")
+	Cmd:      cmd,
+	HelpFunc: helpFunc,
+	Init: func(brute *hdsbrute.Brute) error {
+		backendSecret = brute.Config.Secret
+		backendURL = brute.Config.BackendURL
 
-		fmt.Println("TimeZones initialized")
+		log.Println("TimeZones initialized")
 		return nil
 	},
-	Exec: handlerFunc,
+	Exec: tzHandleFunc,
 }
 
-func handlerFunc(s *discordgo.Session, m *discordgo.MessageCreate, query []string) {
+// helpFunc is the function called to display help/usage info
+func helpFunc(b *hdsbrute.Brute, s *discordgo.Session, m *discordgo.MessageCreate) {
+	helpMessage := []string{
+		"**Description**: Shows the current time and time offset",
+		"**Usage**:",
+		"",
+		fmt.Sprintf("`%s%s` - lists tz for all users", b.Prefix, cmd),
+		fmt.Sprintf("`%s%s [username|mention]` - shows tz for the provided user", b.Prefix, cmd),
+	}
+	s.ChannelMessageSend(m.ChannelID, strings.Join(helpMessage, "\n"))
+}
+
+// tzHandleFunc handles requests for the tz command
+func tzHandleFunc(s *discordgo.Session, m *discordgo.MessageCreate, query []string) {
 	url := fmt.Sprintf("%s/api/v1/timezones", backendURL)
 	if backendSecret != "" {
-		url = fmt.Sprintf("%s&secret=%s", url, backendSecret)
+		url = fmt.Sprintf("%s?secret=%s", url, backendSecret)
 	}
 
 	resp, err := http.Get(url)
-	if err != nil || resp.StatusCode != http.StatusOK {
-		fmt.Printf("Failed to get map - got %s. Error was: %v\n", resp.Status, err)
-		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf(":flushed: Failed to get timezones - %s", resp.Status))
+	if err != nil {
+		log.Printf("Failed to get map. Error was: %v\n", err)
+		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf(":flushed: Failed to get timezones"))
 		return
 	}
 	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		log.Printf("Failed to get map. Status was: %v\n", resp.Status)
+		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf(":flushed: Failed to get timezones"))
+		return
+	}
 
 	var timeZones []models.UserTime
 	err = json.NewDecoder(resp.Body).Decode(&timeZones)
 	if err != nil {
-		fmt.Printf("Failed to decode TZ response. Error was: %v\n", err)
+		log.Printf("Failed to decode TZ response. Error was: %v\n", err)
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf(":flushed: Failed to get time zones - %s", err.Error()))
 		return
 	}
@@ -59,7 +80,7 @@ func handlerFunc(s *discordgo.Session, m *discordgo.MessageCreate, query []strin
 			}
 			_, err = s.ChannelMessageSend(m.ChannelID, message)
 			if err != nil {
-				fmt.Printf("Failed to send TimeZones message: %v\n", err)
+				log.Printf("Failed to send TimeZones message: %v\n", err)
 			}
 		}
 		return
@@ -71,7 +92,7 @@ func handlerFunc(s *discordgo.Session, m *discordgo.MessageCreate, query []strin
 	if err != nil {
 		_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("No such user: %s", userArg))
 		if err != nil {
-			fmt.Printf("Failed to send message: %v\n", err)
+			log.Printf("Failed to send message: %v\n", err)
 		}
 	}
 
@@ -79,14 +100,14 @@ func handlerFunc(s *discordgo.Session, m *discordgo.MessageCreate, query []strin
 		if strings.ToLower(user.Username) == strings.ToLower(u.UserName) {
 			_, err = s.ChannelMessageSendEmbed(m.ChannelID, createTzEmbed(u, user.AvatarURL("")))
 			if err != nil {
-				fmt.Printf("Failed to send TimeZones message: %v\n", err)
+				log.Printf("Failed to send TimeZones message: %v\n", err)
 			}
 			return
 		}
 	}
 	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("No such user in TZ database: %s", userArg))
 	if err != nil {
-		fmt.Printf("Failed to send message: %v\n", err)
+		log.Printf("Failed to send message: %v\n", err)
 	}
 }
 

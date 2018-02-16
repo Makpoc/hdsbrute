@@ -14,10 +14,7 @@ const sheetEnvKey = "sheet"
 var SheetCommand = hdsbrute.Command{
 	Cmd:     "sheet",
 	HelpStr: "Provides the link for the google spreadsheet :spy:",
-	Init: func() error {
-		return nil
-	},
-	Exec: sheetFn,
+	Exec:    sheetFn,
 }
 
 func sheetFn(s *discordgo.Session, m *discordgo.MessageCreate, query []string) {

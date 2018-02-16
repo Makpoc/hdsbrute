@@ -2,6 +2,7 @@ package frosty
 
 import (
 	"fmt"
+	"log"
 	"math/rand"
 	"time"
 
@@ -15,8 +16,8 @@ import (
 var FrostyCommand = hdsbrute.Command{
 	Cmd:     "frosty",
 	HelpStr: "Frosty is :cool: :snowman2:",
-	Init: func() error {
-		fmt.Println("Frosty ready!")
+	Init: func(b *hdsbrute.Brute) error {
+		log.Println("Frosty ready!")
 		return nil
 	},
 	Exec: frostyHandlerFn,
@@ -33,7 +34,7 @@ func frostyHandlerFn(s *discordgo.Session, m *discordgo.MessageCreate, query []s
 	}
 
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 	}
 }
 

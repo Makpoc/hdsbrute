@@ -1,39 +1,23 @@
 package main
 
 import (
-	"fmt"
+	"log"
 	"os"
-
-	"github.com/makpoc/hdsbrute/commands/gsheet"
 
 	"github.com/makpoc/hdsbrute"
 	"github.com/makpoc/hdsbrute/commands/coffee"
 	"github.com/makpoc/hdsbrute/commands/frosty"
+	"github.com/makpoc/hdsbrute/commands/gsheet"
 	"github.com/makpoc/hdsbrute/commands/sheet"
 	"github.com/makpoc/hdsbrute/commands/wsmap"
 )
 
-var token string
-
-var botID string
-var botPrefix string
-
-var (
-	dbUser string
-	dbPass string
-	dbName string
-)
-
 func main() {
-	initEnv()
-
-	brute, err := hdsbrute.New(botPrefix, token)
+	brute, err := hdsbrute.New(hdsbrute.GetEnvPropOrDefault("BOT_TOKEN", ""))
 
 	if err != nil {
 		printAndExit(err)
 	}
-
-	fmt.Println(brute.BotID)
 
 	brute.AddCommand(frosty.FrostyCommand)
 	brute.AddCommand(coffee.CoffeeCommand)
@@ -41,7 +25,7 @@ func main() {
 	brute.AddCommand(wsmap.WsCommand)
 	brute.AddCommand(gsheet.TimeZoneCommand)
 
-	fmt.Println("Bot is running")
+	log.Println("Bot is running")
 
 	err = brute.Start()
 	if err != nil {
@@ -50,17 +34,7 @@ func main() {
 	<-make(chan struct{})
 }
 
-// initEnv initializes the application from the environment
-func initEnv() {
-	botPrefix = hdsbrute.GetEnvPropOrDefault("botPrefix", "!")
-	token = hdsbrute.GetEnvPropOrDefault("BOT_TOKEN", "")
-
-	dbPass = hdsbrute.GetEnvPropOrDefault("dbPass", "")
-	dbName = hdsbrute.GetEnvPropOrDefault("dbName", "")
-	dbUser = hdsbrute.GetEnvPropOrDefault("dbUser", "")
-}
-
 func printAndExit(err error) {
-	fmt.Printf("%v\n", err)
+	log.Printf("%v\n", err)
 	os.Exit(1)
 }
