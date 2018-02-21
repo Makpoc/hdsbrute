@@ -94,6 +94,7 @@ func mapHandlerFn(s *discordgo.Session, m *discordgo.MessageCreate, query []stri
 
 // sendDiscordResponse sends the response from the backend to the discord channel it got the trigger from. It will also add a message to the file in that response, containing the author of the trigger and will delete the original message.
 func sendDiscordResponse(s *discordgo.Session, m *discordgo.MessageCreate, resp *http.Response, mCommand mapCommand) error {
+	fmt.Printf("mCommand: %#v\n", mCommand)
 	respContentType := resp.Header.Get("Content-Type")
 	if !strings.HasPrefix(respContentType, "image/") {
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf(":thinking: Suspecious content type: %s!", respContentType))
@@ -120,14 +121,18 @@ func sendDiscordResponse(s *discordgo.Session, m *discordgo.MessageCreate, resp 
 func parseMapCommand(query []string) mapCommand {
 	var mCommand mapCommand
 	if len(query) > 0 {
-		var i int
-		for _, w := range query {
+		var mIndex int
+		var w string
+		for _, w = range query {
 			if !isValidArgument(w) {
 				break
 			}
+			fmt.Printf("Adding %v as argument\n", w)
 			mCommand.args = append(mCommand.args, w)
+			mIndex++
 		}
-		mCommand.message = query[i:]
+		fmt.Printf("Remaining args as message: %v, from index: %d\n", query[mIndex:], mIndex)
+		mCommand.message = query[mIndex:]
 	}
 	return mCommand
 }
