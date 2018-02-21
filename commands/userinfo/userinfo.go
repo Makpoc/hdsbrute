@@ -163,6 +163,8 @@ func createEmbed(u models.User, avatarURL string) *discordgo.MessageEmbed {
 func formatBSInfo(u models.User) string {
 	info := []string{}
 	info = append(info, fmt.Sprintf("**Role**: %s", u.BsRole))
+	info = append(info, fmt.Sprintf("**Weapon**: %s", u.BsWeapon))
+	info = append(info, fmt.Sprintf("**Shield**: %s", u.BsShield))
 	info = append(info, "**Modules**:")
 	info = append(info, formatModulesInfo(u.BsModules))
 
