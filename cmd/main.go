@@ -11,6 +11,7 @@ import (
 	"github.com/makpoc/hdsbrute/commands/frosty"
 	"github.com/makpoc/hdsbrute/commands/gsheet"
 	"github.com/makpoc/hdsbrute/commands/sheet"
+	"github.com/makpoc/hdsbrute/commands/userinfo"
 	"github.com/makpoc/hdsbrute/commands/wsmap"
 )
 
@@ -26,6 +27,7 @@ func main() {
 	brute.AddCommand(sheet.SheetCommand)
 	brute.AddCommand(wsmap.WsCommand)
 	brute.AddCommand(gsheet.TimeZoneCommand)
+	brute.AddCommand(userinfo.UserInfoCommand)
 
 	err = brute.Start()
 	if err != nil {

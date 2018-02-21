@@ -16,11 +16,11 @@ var CoffeeCommand = hdsbrute.Command{
 		log.Println("Coffee brewing!")
 		return nil
 	},
-	Exec: coffeeHandler,
+	Exec: handleFunc,
 }
 
-// Handle responds to .coffee command with some recepies
-func coffeeHandler(s *discordgo.Session, m *discordgo.MessageCreate, query []string) {
+// handleFunc responds to .coffee command with some recepies
+func handleFunc(b *hdsbrute.Brute, s *discordgo.Session, m *discordgo.MessageCreate, query []string) {
 	_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf(`Here's the recipe you asked for %s:
     **1.** Brew a large espresso :coffee:.
     **2.** Fill a cocktail shaker half full with ice cubes :cocktail:.

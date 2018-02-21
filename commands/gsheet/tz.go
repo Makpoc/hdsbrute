@@ -29,7 +29,7 @@ var TimeZoneCommand = hdsbrute.Command{
 		log.Println("TimeZones initialized")
 		return nil
 	},
-	Exec: tzHandleFunc,
+	Exec: handleFunc,
 }
 
 // helpFunc is the function called to display help/usage info
@@ -44,8 +44,8 @@ func helpFunc(b *hdsbrute.Brute, s *discordgo.Session, m *discordgo.MessageCreat
 	s.ChannelMessageSend(m.ChannelID, strings.Join(helpMessage, "\n"))
 }
 
-// tzHandleFunc handles requests for the tz command
-func tzHandleFunc(s *discordgo.Session, m *discordgo.MessageCreate, query []string) {
+// handleFunc handles requests for the tz command
+func handleFunc(b *hdsbrute.Brute, s *discordgo.Session, m *discordgo.MessageCreate, query []string) {
 	url := fmt.Sprintf("%s/api/v1/timezones", backendURL)
 	if backendSecret != "" {
 		url = fmt.Sprintf("%s?secret=%s", url, backendSecret)

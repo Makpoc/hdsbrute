@@ -20,11 +20,11 @@ var FrostyCommand = hdsbrute.Command{
 		log.Println("Frosty ready!")
 		return nil
 	},
-	Exec: frostyHandlerFn,
+	Exec: handleFunc,
 }
 
-// frostyHandlerFn responds to frosty command with some random stuff
-func frostyHandlerFn(s *discordgo.Session, m *discordgo.MessageCreate, query []string) {
+// handleFunc responds to frosty command with some random stuff
+func handleFunc(b *hdsbrute.Brute, s *discordgo.Session, m *discordgo.MessageCreate, query []string) {
 	var err error
 	if len(query) == 2 && query[0] == "or" && query[1] == "else" {
 		// Special for TngB (actually - that whole command is for him :rolling_eye:)

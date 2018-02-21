@@ -85,7 +85,7 @@ func (b *Brute) Dispatch(m *discordgo.MessageCreate) {
 
 	cmd := b.findCommand(strings.TrimPrefix(words[0], b.Prefix))
 	if cmd != nil && cmd.Exec != nil {
-		cmd.Exec(b.Session, m, words[1:])
+		cmd.Exec(b, b.Session, m, words[1:])
 	}
 }
 

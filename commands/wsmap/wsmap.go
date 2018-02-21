@@ -33,7 +33,7 @@ var WsCommand = hdsbrute.Command{
 		log.Println("Map initialized")
 		return nil
 	},
-	Exec: mapHandlerFn,
+	Exec: handleFunc,
 }
 
 // helpFunc is the function called to display help/usage info
@@ -57,8 +57,8 @@ func buildHelpString(cmdWithPrefix string) string {
 	return strings.TrimRight(finalMessage, "\n")
 }
 
-// mapHandler answers calls to map and map [coord|color] message
-func mapHandlerFn(s *discordgo.Session, m *discordgo.MessageCreate, query []string) {
+// handlerFunc answers calls to map and map [coord|color] message
+func handleFunc(b *hdsbrute.Brute, s *discordgo.Session, m *discordgo.MessageCreate, query []string) {
 	mCommand := parseMapCommand(query)
 	mCommand.author = m.Author.Username
 

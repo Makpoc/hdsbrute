@@ -14,10 +14,10 @@ const sheetEnvKey = "SHEET"
 var SheetCommand = hdsbrute.Command{
 	Cmd:     "sheet",
 	HelpStr: "Provides the link for the google spreadsheet :spy:",
-	Exec:    sheetFn,
+	Exec:    handleFunc,
 }
 
-func sheetFn(s *discordgo.Session, m *discordgo.MessageCreate, query []string) {
+func handleFunc(b *hdsbrute.Brute, s *discordgo.Session, m *discordgo.MessageCreate, query []string) {
 	sheetLink, ok := os.LookupEnv(sheetEnvKey)
 	if !ok {
 		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Sheet link not set in environment :poop:"))
