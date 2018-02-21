@@ -35,7 +35,9 @@ var TimeZoneCommand = hdsbrute.Command{
 // helpFunc is the function called to display help/usage info
 func helpFunc(b *hdsbrute.Brute, s *discordgo.Session, m *discordgo.MessageCreate) {
 	helpMessage := []string{
-		"**Description**: Shows the current time and time offset",
+		"**Description**:",
+		fmt.Sprintf("Shows the current time and time offset taken from the `%ssheet`", b.Prefix),
+		"",
 		"**Usage**:",
 		"",
 		fmt.Sprintf("`%s%s` - lists tz for all users", b.Prefix, cmd),

@@ -35,10 +35,12 @@ var UserInfoCommand = hdsbrute.Command{
 // helpFunc is the function called to display help/usage info
 func helpFunc(b *hdsbrute.Brute, s *discordgo.Session, m *discordgo.MessageCreate) {
 	helpMessage := []string{
-		"**Description**: prints user info for the specified user",
+		"**Description**:",
+		fmt.Sprintf("Prints ships and modules info taken from the `%ssheet`", b.Prefix),
+		"",
 		"**Usage**:",
 		"",
-		fmt.Sprintf("`%s%s [username|mention]` - prints user info for the specified user", b.Prefix, cmd),
+		fmt.Sprintf("`%s%s [username|mention]`", b.Prefix, cmd),
 	}
 	s.ChannelMessageSend(m.ChannelID, strings.Join(helpMessage, "\n"))
 }
@@ -162,9 +164,7 @@ func formatBSInfo(u models.User) string {
 	info := []string{}
 	info = append(info, fmt.Sprintf("**Role**: %s", u.BsRole))
 	info = append(info, "**Modules**:")
-	for _, m := range u.BsModules {
-		info = append(info, fmt.Sprintf("%s %s", m.Name, m.Level))
-	}
+	info = append(info, formatModulesInfo(u.BsModules))
 
 	return strings.Join(info, "\n")
 }
@@ -173,9 +173,7 @@ func formatTSInfo(u models.User) string {
 	info := []string{}
 	info = append(info, fmt.Sprintf("**Capacity**: %s", u.TsCapacity))
 	info = append(info, "**Modules**:")
-	for _, m := range u.TsModules {
-		info = append(info, fmt.Sprintf("%s %s", m.Name, m.Level))
-	}
+	info = append(info, formatModulesInfo(u.TsModules))
 
 	return strings.Join(info, "\n")
 }
@@ -184,9 +182,19 @@ func formatMinerInfo(u models.User) string {
 	info := []string{}
 	info = append(info, fmt.Sprintf("**Level**: %s", u.MinerLevel))
 	info = append(info, "**Modules**:")
-	for _, m := range u.MinerModules {
-		info = append(info, fmt.Sprintf("%s %s", m.Name, m.Level))
-	}
+	info = append(info, formatModulesInfo(u.MinerModules))
 
 	return strings.Join(info, "\n")
+}
+
+func formatModulesInfo(modules models.Modules) string {
+	if modules == nil {
+		return ""
+	}
+
+	result := []string{}
+	for _, m := range modules {
+		result = append(result, fmt.Sprintf("%s - %s", m.Name, m.Level))
+	}
+	return strings.Join(result, "\n")
 }
