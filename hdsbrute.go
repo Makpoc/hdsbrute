@@ -106,7 +106,7 @@ func (b *Brute) Start() error {
 // Close closes the connection
 func (b *Brute) Close() error {
 	if b != nil {
-		return b.Close()
+		return b.Session.Close()
 	}
 
 	return nil
