@@ -89,7 +89,7 @@ func (b *Brute) Dispatch(m *discordgo.MessageCreate) {
 	}
 }
 
-// Start ...
+// Start starts the bot
 func (b *Brute) Start() error {
 	b.Session.AddHandler(func(s *discordgo.Session, m *discordgo.MessageCreate) {
 		b.Dispatch(m)
@@ -98,6 +98,15 @@ func (b *Brute) Start() error {
 	err := b.Session.Open()
 	if err != nil {
 		return err
+	}
+
+	return nil
+}
+
+// Close closes the connection
+func (b *Brute) Close() error {
+	if b != nil {
+		return b.Close()
 	}
 
 	return nil

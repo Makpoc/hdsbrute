@@ -3,6 +3,8 @@ package main
 import (
 	"log"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/makpoc/hdsbrute"
 	"github.com/makpoc/hdsbrute/commands/coffee"
@@ -25,13 +27,21 @@ func main() {
 	brute.AddCommand(wsmap.WsCommand)
 	brute.AddCommand(gsheet.TimeZoneCommand)
 
-	log.Println("Bot is running")
-
 	err = brute.Start()
 	if err != nil {
 		printAndExit(err)
 	}
-	<-make(chan struct{})
+	// Wait here until CTRL-C or other term signal is received.
+	log.Println("Bot is now running.  Press CTRL-C to exit.")
+
+	sc := make(chan os.Signal, 1)
+	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
+	<-sc
+
+	err = brute.Close()
+	if err != nil {
+		printAndExit(err)
+	}
 }
 
 func printAndExit(err error) {

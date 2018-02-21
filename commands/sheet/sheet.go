@@ -8,7 +8,7 @@ import (
 	"github.com/makpoc/hdsbrute"
 )
 
-const sheetEnvKey = "sheet"
+const sheetEnvKey = "SHEET"
 
 // SheetCommand is frosty, duh (courtesy of TngB)
 var SheetCommand = hdsbrute.Command{
