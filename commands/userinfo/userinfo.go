@@ -57,41 +57,33 @@ func handleFunc(b *hdsbrute.Brute, s *discordgo.Session, m *discordgo.MessageCre
 		url = fmt.Sprintf("%s?secret=%s", url, backendSecret)
 	}
 
-	resp, err := http.Get(url)
+	backendUsers, err := getSheetUsers(url)
 	if err != nil {
-		log.Printf("Failed to get map. Error was: %v\n", err)
-		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf(":flushed: Failed to get user info"))
-		return
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		log.Printf("Failed to get map. Status was: %v\n", resp.Status)
-		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf(":flushed: Failed to get user info"))
-		return
+		log.Printf("Failed to get Sheet Users: %v", err)
+		_, err = s.ChannelMessageSend(m.ChannelID, "Failed to get sheet users :poop:")
 	}
 
-	var users models.Users
-	err = json.NewDecoder(resp.Body).Decode(&users)
-	if err != nil {
-		log.Printf("Failed to decode UserInfo response. Error was: %v\n", err)
-		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf(":flushed: Failed to get user info - %s", err.Error()))
-		return
-	}
-
-	// TODO: - implement as query parameter to the backend!
-	userArg := strings.Join(query[0:], " ")
-	discordUser, err := getUserFromArg(s, m, userArg)
-	var userAvatarURL, userName string
-	if err != nil {
-		userName = userArg
+	userArg := strings.TrimSpace(strings.Join(query[0:], " "))
+	discordUser, err := findDiscordUser(s, m, userArg)
+	if err == nil {
+		if backendUser, err := getBackendUser(discordUser.Username, backendUsers); err == nil {
+			_, err = s.ChannelMessageSendEmbed(m.ChannelID, createEmbed(backendUser, discordUser.AvatarURL("")))
+			if err != nil {
+				log.Printf("Failed to send User Info message: %v\n", err)
+			}
+			return
+		}
 	} else {
-		userName = discordUser.Username
-		userAvatarURL = discordUser.AvatarURL("")
-	}
-
-	for _, backendUser := range users {
-		if strings.ToLower(userName) == strings.ToLower(backendUser.Name) {
-			_, err = s.ChannelMessageSendEmbed(m.ChannelID, createEmbed(backendUser, userAvatarURL))
+		if strings.HasPrefix(err.Error(), "multiple users matched") {
+			_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Ambiguous user - *%s*: %s", userArg, err.Error()))
+			if err != nil {
+				log.Printf("Failed to send message: %v\n", err)
+			}
+			return
+		}
+		// discord user not found by exact or partial match. Try to search the sheet for the provided arguments directly
+		if backendUser, err := getBackendUser(userArg, backendUsers); err == nil {
+			_, err = s.ChannelMessageSendEmbed(m.ChannelID, createEmbed(backendUser, ""))
 			if err != nil {
 				log.Printf("Failed to send User Info message: %v\n", err)
 			}
@@ -99,17 +91,87 @@ func handleFunc(b *hdsbrute.Brute, s *discordgo.Session, m *discordgo.MessageCre
 		}
 	}
 
-	noSuchUserMsg := fmt.Sprintf("No such user in sheet database: %s", userArg)
-	if discordUser != nil {
-		fmt.Sprintf("%s, aka %s", noSuchUserMsg, discordUser.Username)
-	}
-	_, err = s.ChannelMessageSend(m.ChannelID, noSuchUserMsg)
+	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("No such user in sheet database: %s", userArg))
 	if err != nil {
 		log.Printf("Failed to send message: %v\n", err)
 	}
 }
 
-func getUserFromArg(s *discordgo.Session, m *discordgo.MessageCreate, userArg string) (*discordgo.User, error) {
+func getBackendUser(userName string, backendUsers models.Users) (models.User, error) {
+	for _, backendUser := range backendUsers {
+		if strings.ToLower(userName) == strings.ToLower(backendUser.Name) {
+			return backendUser, nil
+		}
+	}
+	return models.User{}, fmt.Errorf("user not found in sheet database")
+}
+
+func getSheetUsers(url string) (models.Users, error) {
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user info: %v", err)
+	}
+
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("failed to get user info. Status was: %s", resp.Status)
+	}
+
+	var users models.Users
+	err = json.NewDecoder(resp.Body).Decode(&users)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode user info: %v", err)
+	}
+
+	return users, nil
+}
+
+func findDiscordUser(s *discordgo.Session, m *discordgo.MessageCreate, userArg string) (*discordgo.User, error) {
+	members, err := getAllGuildMembers(s, m)
+	if err != nil {
+		return nil, err
+	}
+
+	var matched []*discordgo.User
+	var matchedUsernames []string
+
+	userArg = strings.ToLower(userArg)
+	for _, member := range members {
+		if matchExactUser(member.User, userArg) {
+			matched = append(matched, member.User)
+			matchedUsernames = append(matchedUsernames, member.User.Username)
+		}
+	}
+
+	if len(matched) == 0 {
+		for _, member := range members {
+			if matchPartialUser(member.User, userArg) {
+				fmt.Printf("Partial match for %s. Matched %v\n", userArg, member.User)
+				matched = append(matched, member.User)
+				matchedUsernames = append(matchedUsernames, member.User.Username)
+			}
+		}
+	}
+
+	switch len(matched) {
+	case 0:
+		return nil, fmt.Errorf("failed to find user: %s", userArg)
+	case 1:
+		return matched[0], nil
+	default:
+		return nil, fmt.Errorf("multiple users matched %s: %s", userArg, strings.Join(matchedUsernames, ", "))
+	}
+}
+
+func matchExactUser(given *discordgo.User, wanted string) bool {
+	return strings.ToLower(given.Username) == wanted || given.ID == strings.TrimSuffix(strings.TrimPrefix(wanted, "<@"), ">")
+}
+
+func matchPartialUser(given *discordgo.User, wanted string) bool {
+	return strings.Contains(strings.ToLower(given.Username), strings.ToLower(wanted))
+}
+
+func getAllGuildMembers(s *discordgo.Session, m *discordgo.MessageCreate) ([]*discordgo.Member, error) {
 	channel, err := s.Channel(m.ChannelID)
 	if err != nil {
 		return nil, err
@@ -118,14 +180,8 @@ func getUserFromArg(s *discordgo.Session, m *discordgo.MessageCreate, userArg st
 	if err != nil {
 		return nil, err
 	}
-	members := guild.Members
 
-	for _, member := range members {
-		if strings.ToLower(member.User.Username) == strings.ToLower(userArg) || member.User.ID == strings.TrimSuffix(strings.TrimPrefix(userArg, "<@"), ">") {
-			return member.User, nil
-		}
-	}
-	return nil, fmt.Errorf("failed to find user: %s", userArg)
+	return guild.Members, nil
 }
 
 func createEmbed(u models.User, avatarURL string) *discordgo.MessageEmbed {
