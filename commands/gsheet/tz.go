@@ -90,17 +90,18 @@ func handleFunc(b *hdsbrute.Brute, s *discordgo.Session, m *discordgo.MessageCre
 
 	// TODO: - implement as query parameter to the backend!
 	userArg := strings.Join(query[0:], " ")
-	user, err := getUserFromArg(s, m, userArg)
+	discordUser, err := getUserFromArg(s, m, userArg)
+	var userAvatarURL, userName string
 	if err != nil {
-		_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("No such user: %s", userArg))
-		if err != nil {
-			log.Printf("Failed to send message: %v\n", err)
-		}
+		userName = userArg
+	} else {
+		userName = discordUser.Username
+		userAvatarURL = discordUser.AvatarURL("")
 	}
 
-	for _, u := range timeZones {
-		if strings.ToLower(user.Username) == strings.ToLower(u.UserName) {
-			_, err = s.ChannelMessageSendEmbed(m.ChannelID, createTzEmbed(u, user.AvatarURL("")))
+	for _, tz := range timeZones {
+		if strings.ToLower(userName) == strings.ToLower(tz.UserName) {
+			_, err = s.ChannelMessageSendEmbed(m.ChannelID, createTzEmbed(tz, userAvatarURL))
 			if err != nil {
 				log.Printf("Failed to send TimeZones message: %v\n", err)
 			}

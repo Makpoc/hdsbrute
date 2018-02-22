@@ -80,25 +80,30 @@ func handleFunc(b *hdsbrute.Brute, s *discordgo.Session, m *discordgo.MessageCre
 
 	// TODO: - implement as query parameter to the backend!
 	userArg := strings.Join(query[0:], " ")
-	user, err := getUserFromArg(s, m, userArg)
+	discordUser, err := getUserFromArg(s, m, userArg)
+	var userAvatarURL, userName string
 	if err != nil {
-		_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("No such user: %s", userArg))
-		if err != nil {
-			log.Printf("Failed to send message: %v\n", err)
-		}
-		return
+		userName = userArg
+	} else {
+		userName = discordUser.Username
+		userAvatarURL = discordUser.AvatarURL("")
 	}
 
-	for _, u := range users {
-		if strings.ToLower(user.Username) == strings.ToLower(u.Name) {
-			_, err = s.ChannelMessageSendEmbed(m.ChannelID, createEmbed(u, user.AvatarURL("")))
+	for _, backendUser := range users {
+		if strings.ToLower(userName) == strings.ToLower(backendUser.Name) {
+			_, err = s.ChannelMessageSendEmbed(m.ChannelID, createEmbed(backendUser, userAvatarURL))
 			if err != nil {
-				log.Printf("Failed to send TimeZones message: %v\n", err)
+				log.Printf("Failed to send User Info message: %v\n", err)
 			}
 			return
 		}
 	}
-	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("No such user in sheet database: %s", userArg))
+
+	noSuchUserMsg := fmt.Sprintf("No such user in sheet database: %s", userArg)
+	if discordUser != nil {
+		fmt.Sprintf("%s, aka %s", noSuchUserMsg, discordUser.Username)
+	}
+	_, err = s.ChannelMessageSend(m.ChannelID, noSuchUserMsg)
 	if err != nil {
 		log.Printf("Failed to send message: %v\n", err)
 	}
@@ -135,6 +140,17 @@ func createEmbed(u models.User, avatarURL string) *discordgo.MessageEmbed {
 				Inline: true,
 			},
 			&discordgo.MessageEmbedField{
+				Name:   "Current time",
+				Value:  u.TZ.CurrentTime.Format(time.Kitchen),
+				Inline: true,
+			},
+			&discordgo.MessageEmbedField{
+				// add a little spacing
+				Name:   "\u200b",
+				Value:  "\u200b",
+				Inline: false,
+			},
+			&discordgo.MessageEmbedField{
 				Name:   "Transporter",
 				Value:  formatTSInfo(u),
 				Inline: true,
@@ -142,11 +158,6 @@ func createEmbed(u models.User, avatarURL string) *discordgo.MessageEmbed {
 			&discordgo.MessageEmbedField{
 				Name:   "Miner",
 				Value:  formatMinerInfo(u),
-				Inline: true,
-			},
-			&discordgo.MessageEmbedField{
-				Name:   "Current time",
-				Value:  u.TZ.CurrentTime.Format(time.Kitchen),
 				Inline: true,
 			},
 		},
