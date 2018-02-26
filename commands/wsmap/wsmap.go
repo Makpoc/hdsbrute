@@ -94,7 +94,6 @@ func handleFunc(b *hdsbrute.Brute, s *discordgo.Session, m *discordgo.MessageCre
 
 // sendDiscordResponse sends the response from the backend to the discord channel it got the trigger from. It will also add a message to the file in that response, containing the author of the trigger and will delete the original message.
 func sendDiscordResponse(s *discordgo.Session, m *discordgo.MessageCreate, resp *http.Response, mCommand mapCommand) error {
-	fmt.Printf("mCommand: %#v\n", mCommand)
 	respContentType := resp.Header.Get("Content-Type")
 	if !strings.HasPrefix(respContentType, "image/") {
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf(":thinking: Suspecious content type: %s!", respContentType))
@@ -127,11 +126,9 @@ func parseMapCommand(query []string) mapCommand {
 			if !isValidArgument(w) {
 				break
 			}
-			fmt.Printf("Adding %v as argument\n", w)
 			mCommand.args = append(mCommand.args, w)
 			mIndex++
 		}
-		fmt.Printf("Remaining args as message: %v, from index: %d\n", query[mIndex:], mIndex)
 		mCommand.message = query[mIndex:]
 	}
 	return mCommand
@@ -144,9 +141,9 @@ func isValidArgument(arg string) bool {
 		"b1", "b2", "b3", "b4", "b5",
 		"c1", "c2", "c3", "c4", "c5", "c6",
 		"d1", "d2", "d3", "d4", "d5", "d6", "d7",
-		"e2", "e3", "e4", "e5", "e6", "e7",
-		"f3", "f4", "f5", "f6", "f7",
-		"g4", "g5", "g6", "g7",
+		"e1", "e2", "e3", "e4", "e5", "e6",
+		"f1", "f2", "f3", "f4", "f5",
+		"g1", "g2", "g3", "g4",
 	}
 
 	colors := []string{
