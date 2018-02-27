@@ -49,7 +49,7 @@ func buildHelpString(cmdWithPrefix string) string {
 
 	subCommands = append(subCommands, fmt.Sprintf("`%s` - Displays just the map with the coordinates", cmdWithPrefix))
 	subCommands = append(subCommands, fmt.Sprintf("`%s [coord...]` - Highlights the sector(s) specified by the provided coordinates. e.g. `%s a1 b2 c3`", cmdWithPrefix, cmdWithPrefix))
-	subCommands = append(subCommands, fmt.Sprintf("`%s [[color] [coord...]...]` - Highlights the provided coordinates with the color that comes before them. E.g. `%s orange a3 green b4 b5 pink d3`. Currently supported colors are: **orange**, **yellow**, **green**, **pink**.", cmdWithPrefix, cmdWithPrefix))
+	subCommands = append(subCommands, fmt.Sprintf("`%s [[color] [coord...]...]` - Highlights the provided coordinates with the color that comes before them. E.g. `%s orange a3 green b4 b5 pink d3`. Currently supported colors are: **orange**, **yellow**, **green**, **pink**, **red** and **warn**.", cmdWithPrefix, cmdWithPrefix))
 	subCommands = append(subCommands, fmt.Sprintf("`%s [color|coords...] [message]` - Same as above but also adds message with details. E.g. `%s orange d3 pink b2 b3 BS defend at d3. Miners void b2 b3`.", cmdWithPrefix, cmdWithPrefix))
 
 	finalMessage := fmt.Sprintf("%s\n%s", header, strings.Join(subCommands, "\n"))
