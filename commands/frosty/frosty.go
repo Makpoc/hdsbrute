@@ -36,6 +36,12 @@ func handleFunc(b *hdsbrute.Brute, s *discordgo.Session, m *discordgo.MessageCre
 	if err != nil {
 		log.Println(err)
 	}
+
+	err = s.ChannelMessageDelete(m.ChannelID, m.ID)
+	if err != nil {
+		log.Println("Failed to delete trigger message", err)
+	}
+
 }
 
 // getRandomEmoji gets the :X: notation for a random emoji
