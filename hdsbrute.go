@@ -3,7 +3,9 @@ package hdsbrute
 import (
 	"fmt"
 	"log"
+	"math/rand"
 	"strings"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -37,6 +39,9 @@ func New(token string) (*Brute, error) {
 	}
 
 	brute.BotID = u.ID
+
+	s.AddHandler(ready)
+
 	return brute, nil
 }
 
@@ -136,4 +141,28 @@ func (b *Brute) displayHelp(s *discordgo.Session, m *discordgo.MessageCreate, qu
 
 	cmd := b.findCommand(query[0])
 	DisplayHelp(b, s, m, []*Command{cmd})
+}
+
+// ready will be called when the bot receives the "ready" event from Discord.
+func ready(s *discordgo.Session, event *discordgo.Ready) {
+	go func() {
+		var statuses = []string{
+			"Playing Hades' Star",
+			"Running RS with bots",
+			"Alarm woke me up for WS",
+			"Doing shipments",
+			"Doing shipments",
+			"Doing shipments",
+			"Idle (low on hydro)",
+			"Playing with TimeMachine",
+		}
+		rand.Seed(time.Now().Unix())
+		for {
+			err := s.UpdateStatus(0, statuses[rand.Intn(len(statuses))])
+			if err != nil {
+				fmt.Printf("%#v\n", err)
+			}
+			time.Sleep(5 * time.Minute)
+		}
+	}()
 }
