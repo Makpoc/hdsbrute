@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -16,6 +17,8 @@ import (
 var backendURL string
 var backendSecret string
 
+var memberRoles []string
+
 const cmd = "info"
 
 // UserInfoCommand ...
@@ -25,6 +28,12 @@ var UserInfoCommand = hdsbrute.Command{
 	Init: func(brute *hdsbrute.Brute) error {
 		backendSecret = brute.Config.Secret
 		backendURL = brute.Config.BackendURL
+		envRoles, ok := os.LookupEnv("MEMBER_ROLES")
+		if ok {
+			for _, role := range strings.Split(envRoles, ",") {
+				memberRoles = append(memberRoles, role)
+			}
+		}
 
 		log.Println("UserInfo initialized")
 		return nil
@@ -64,8 +73,22 @@ func handleFunc(b *hdsbrute.Brute, s *discordgo.Session, m *discordgo.MessageCre
 	}
 
 	userArg := strings.TrimSpace(strings.Join(query[0:], " "))
+	// search the sheet for the provided arguments first
+	if backendUser, err := getBackendUser(userArg, backendUsers); err == nil {
+		avatarURL := ""
+		if discordUser, err := findDiscordUser(s, m, backendUser.Name); err == nil {
+			avatarURL = discordUser.AvatarURL("")
+		}
+		_, err = s.ChannelMessageSendEmbed(m.ChannelID, createEmbed(backendUser, avatarURL))
+		if err != nil {
+			log.Printf("Failed to send User Info message: %v\n", err)
+		}
+		return
+	}
+
 	discordUser, err := findDiscordUser(s, m, userArg)
 	if err == nil {
+		// matching discord user found
 		if backendUser, err := getBackendUser(discordUser.Username, backendUsers); err == nil {
 			_, err = s.ChannelMessageSendEmbed(m.ChannelID, createEmbed(backendUser, discordUser.AvatarURL("")))
 			if err != nil {
@@ -81,14 +104,6 @@ func handleFunc(b *hdsbrute.Brute, s *discordgo.Session, m *discordgo.MessageCre
 			}
 			return
 		}
-		// discord user not found by exact or partial match. Try to search the sheet for the provided arguments directly
-		if backendUser, err := getBackendUser(userArg, backendUsers); err == nil {
-			_, err = s.ChannelMessageSendEmbed(m.ChannelID, createEmbed(backendUser, ""))
-			if err != nil {
-				log.Printf("Failed to send User Info message: %v\n", err)
-			}
-			return
-		}
 	}
 
 	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("No such user in sheet database: %s", userArg))
@@ -100,6 +115,12 @@ func handleFunc(b *hdsbrute.Brute, s *discordgo.Session, m *discordgo.MessageCre
 func getBackendUser(userName string, backendUsers models.Users) (models.User, error) {
 	for _, backendUser := range backendUsers {
 		if strings.ToLower(userName) == strings.ToLower(backendUser.Name) {
+			return backendUser, nil
+		}
+	}
+
+	for _, backendUser := range backendUsers {
+		if matchPartialUser(backendUser.Name, userName) {
 			return backendUser, nil
 		}
 	}
@@ -145,8 +166,7 @@ func findDiscordUser(s *discordgo.Session, m *discordgo.MessageCreate, userArg s
 
 	if len(matched) == 0 {
 		for _, member := range members {
-			if matchPartialUser(member.User, userArg) {
-				fmt.Printf("Partial match for %s. Matched %v\n", userArg, member.User)
+			if matchPartialUser(member.User.Username, userArg) {
 				matched = append(matched, member.User)
 				matchedUsernames = append(matchedUsernames, member.User.Username)
 			}
@@ -167,8 +187,8 @@ func matchExactUser(given *discordgo.User, wanted string) bool {
 	return strings.ToLower(given.Username) == wanted || given.ID == strings.TrimSuffix(strings.TrimPrefix(wanted, "<@"), ">")
 }
 
-func matchPartialUser(given *discordgo.User, wanted string) bool {
-	return strings.Contains(strings.ToLower(given.Username), strings.ToLower(wanted))
+func matchPartialUser(given string, wanted string) bool {
+	return strings.Contains(strings.ToLower(given), strings.ToLower(wanted))
 }
 
 func getAllGuildMembers(s *discordgo.Session, m *discordgo.MessageCreate) ([]*discordgo.Member, error) {
@@ -181,7 +201,41 @@ func getAllGuildMembers(s *discordgo.Session, m *discordgo.MessageCreate) ([]*di
 		return nil, err
 	}
 
-	return guild.Members, nil
+	var corpMembers []*discordgo.Member
+
+	for _, member := range guild.Members {
+		for _, role := range member.Roles {
+			if isAllowedRole(getRoleName(guild, role)) {
+				corpMembers = append(corpMembers, member)
+				break // role loop
+			}
+		}
+	}
+
+	return corpMembers, nil
+}
+
+func isAllowedRole(role string) bool {
+	if len(memberRoles) == 0 {
+		// no specific role requirements
+		return true
+	}
+	for _, r := range memberRoles {
+		if r == role {
+			return true
+		}
+	}
+
+	return false
+}
+
+func getRoleName(guild *discordgo.Guild, roleId string) string {
+	for _, role := range guild.Roles {
+		if role.ID == roleId {
+			return role.Name
+		}
+	}
+	return ""
 }
 
 func createEmbed(u models.User, avatarURL string) *discordgo.MessageEmbed {
