@@ -147,14 +147,13 @@ func (b *Brute) displayHelp(s *discordgo.Session, m *discordgo.MessageCreate, qu
 func ready(s *discordgo.Session, event *discordgo.Ready) {
 	go func() {
 		var statuses = []string{
-			"Playing Hades' Star",
-			"Running RS with bots",
-			"Alarm woke me up for WS",
-			"Doing shipments",
-			"Doing shipments",
-			"Doing shipments",
-			"Idle (low on hydro)",
-			"Playing with TimeMachine",
+			"Hades' Star",
+			"RS with bots",
+			"shipments delivery",
+			"shipments delivery",
+			"shipments delivery",
+			"but low on hydro",
+			"with TimeMachine",
 		}
 		rand.Seed(time.Now().Unix())
 		for {
