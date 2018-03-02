@@ -54,7 +54,7 @@ func helpFunc(b *hdsbrute.Brute, s *discordgo.Session, m *discordgo.MessageCreat
 	s.ChannelMessageSend(m.ChannelID, strings.Join(helpMessage, "\n"))
 }
 
-// handleFunc handles requests for the tz command
+// handleFunc handles requests for the info command
 func handleFunc(b *hdsbrute.Brute, s *discordgo.Session, m *discordgo.MessageCreate, query []string) {
 	if len(query) == 0 {
 		helpFunc(b, s, m)
@@ -70,6 +70,7 @@ func handleFunc(b *hdsbrute.Brute, s *discordgo.Session, m *discordgo.MessageCre
 	if err != nil {
 		log.Printf("Failed to get Sheet Users: %v", err)
 		_, err = s.ChannelMessageSend(m.ChannelID, "Failed to get sheet users :poop:")
+		return
 	}
 
 	userArg := strings.TrimSpace(strings.Join(query[0:], " "))
@@ -148,7 +149,7 @@ func getSheetUsers(url string) (models.Users, error) {
 }
 
 func findDiscordUser(s *discordgo.Session, m *discordgo.MessageCreate, userArg string) (*discordgo.User, error) {
-	members, err := getAllGuildMembers(s, m)
+	members, err := hdsbrute.GetGuildMembers(s, m, memberRoles)
 	if err != nil {
 		return nil, err
 	}
@@ -189,53 +190,6 @@ func matchExactUser(given *discordgo.User, wanted string) bool {
 
 func matchPartialUser(given string, wanted string) bool {
 	return strings.Contains(strings.ToLower(given), strings.ToLower(wanted))
-}
-
-func getAllGuildMembers(s *discordgo.Session, m *discordgo.MessageCreate) ([]*discordgo.Member, error) {
-	channel, err := s.Channel(m.ChannelID)
-	if err != nil {
-		return nil, err
-	}
-	guild, err := s.Guild(channel.GuildID)
-	if err != nil {
-		return nil, err
-	}
-
-	var corpMembers []*discordgo.Member
-
-	for _, member := range guild.Members {
-		for _, role := range member.Roles {
-			if isAllowedRole(getRoleName(guild, role)) {
-				corpMembers = append(corpMembers, member)
-				break // role loop
-			}
-		}
-	}
-
-	return corpMembers, nil
-}
-
-func isAllowedRole(role string) bool {
-	if len(memberRoles) == 0 {
-		// no specific role requirements
-		return true
-	}
-	for _, r := range memberRoles {
-		if r == role {
-			return true
-		}
-	}
-
-	return false
-}
-
-func getRoleName(guild *discordgo.Guild, roleId string) string {
-	for _, role := range guild.Roles {
-		if role.ID == roleId {
-			return role.Name
-		}
-	}
-	return ""
 }
 
 func createEmbed(u models.User, avatarURL string) *discordgo.MessageEmbed {

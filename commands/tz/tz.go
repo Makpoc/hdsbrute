@@ -1,8 +1,9 @@
-package gsheet
+package tz
 
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"strings"
@@ -48,73 +49,96 @@ func helpFunc(b *hdsbrute.Brute, s *discordgo.Session, m *discordgo.MessageCreat
 
 // handleFunc handles requests for the tz command
 func handleFunc(b *hdsbrute.Brute, s *discordgo.Session, m *discordgo.MessageCreate, query []string) {
+	isSingleUserRequest := len(query) > 0
+
 	url := fmt.Sprintf("%s/api/v1/timezones", backendURL)
+	if isSingleUserRequest {
+		url = fmt.Sprintf("%s/%s", url, strings.Join(query, " "))
+	}
+
 	if backendSecret != "" {
 		url = fmt.Sprintf("%s?secret=%s", url, backendSecret)
 	}
 
+	fmt.Println(url)
 	resp, err := http.Get(url)
 	if err != nil {
-		log.Printf("Failed to get map. Error was: %v\n", err)
+		log.Printf("Failed to get time zones. Error was: %v\n", err)
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf(":flushed: Failed to get timezones"))
 		return
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		log.Printf("Failed to get map. Status was: %v\n", resp.Status)
+		log.Printf("Failed to get time zones. Status was: %v\n", resp.Status)
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf(":flushed: Failed to get timezones"))
 		return
 	}
 
+	if isSingleUserRequest {
+		handleUserTzFunc(s, m, query, resp.Body)
+	} else {
+		handleAllTzFunc(s, m, query, resp.Body)
+	}
+}
+
+func handleAllTzFunc(s *discordgo.Session, m *discordgo.MessageCreate, query []string, body io.Reader) {
+	fmt.Println("handleAllTz")
 	var timeZones []models.UserTime
-	err = json.NewDecoder(resp.Body).Decode(&timeZones)
+	err := json.NewDecoder(body).Decode(&timeZones)
 	if err != nil {
 		log.Printf("Failed to decode TZ response. Error was: %v\n", err)
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf(":flushed: Failed to get time zones - %s", err.Error()))
 		return
 	}
 
-	if len(query) == 0 {
-		messages := formatAllTzMessage(timeZones, 2000)
-		for _, message := range messages {
-			if len(message) == 0 {
-				continue
-			}
-			_, err = s.ChannelMessageSend(m.ChannelID, message)
-			if err != nil {
-				log.Printf("Failed to send TimeZones message: %v\n", err)
-			}
+	messages := formatAllTzMessage(timeZones, 2000)
+	for _, message := range messages {
+		if len(message) == 0 {
+			continue
 		}
-		return
-	}
-
-	// TODO: - implement as query parameter to the backend!
-	userArg := strings.Join(query[0:], " ")
-	discordUser, err := getUserFromArg(s, m, userArg)
-	var userAvatarURL, userName string
-	if err != nil {
-		userName = userArg
-	} else {
-		userName = discordUser.Username
-		userAvatarURL = discordUser.AvatarURL("")
-	}
-
-	for _, tz := range timeZones {
-		if strings.ToLower(userName) == strings.ToLower(tz.UserName) {
-			_, err = s.ChannelMessageSendEmbed(m.ChannelID, createTzEmbed(tz, userAvatarURL))
-			if err != nil {
-				log.Printf("Failed to send TimeZones message: %v\n", err)
-			}
-			return
+		_, err = s.ChannelMessageSend(m.ChannelID, message)
+		if err != nil {
+			log.Printf("Failed to send TimeZones message: %v\n", err)
 		}
-	}
-	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("No such user in TZ database: %s", userArg))
-	if err != nil {
-		log.Printf("Failed to send message: %v\n", err)
 	}
 }
 
-func createTzEmbed(u models.UserTime, avatarURL string) *discordgo.MessageEmbed {
+func handleUserTzFunc(s *discordgo.Session, m *discordgo.MessageCreate, query []string, body io.Reader) {
+	fmt.Println("handleUserTz")
+	var timeZone = &models.UserTime{}
+	err := json.NewDecoder(body).Decode(timeZone)
+	if err != nil {
+		if err == io.EOF {
+			s.ChannelMessageSend(m.ChannelID, fmt.Sprintf(":thinking: No such user: %s. Are you sure s/he is in the sheet?", strings.Join(query, " ")))
+			return
+		}
+		log.Printf("Failed to decode TZ response. Error was: %v\n", err)
+		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf(":flushed: Failed to get time zone for user - %s", err.Error()))
+		return
+	}
+
+	if timeZone == nil || timeZone.UserName == "" {
+		_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("No such user in TZ database: %s", strings.Join(query, " ")))
+		if err != nil {
+			log.Printf("Failed to send message: %v\n", err)
+		}
+	}
+
+	var userAvatarURL string
+	discordUser, err := getUserFromArg(s, m, timeZone.UserName)
+	if err != nil {
+	} else {
+		userAvatarURL = discordUser.AvatarURL("")
+	}
+
+	_, err = s.ChannelMessageSendEmbed(m.ChannelID, createTzEmbed(timeZone, userAvatarURL))
+	if err != nil {
+		log.Printf("Failed to send TimeZones message: %v\n", err)
+		return
+	}
+}
+
+func createTzEmbed(u *models.UserTime, avatarURL string) *discordgo.MessageEmbed {
 	embed := &discordgo.MessageEmbed{
 		Author: &discordgo.MessageEmbedAuthor{},
 		Color:  getEmbedColor(u),
@@ -142,7 +166,7 @@ func createTzEmbed(u models.UserTime, avatarURL string) *discordgo.MessageEmbed 
 }
 
 // getEmbedColor calculates the color based on the time of the day for the provided user
-func getEmbedColor(u models.UserTime) int {
+func getEmbedColor(u *models.UserTime) int {
 	uHour := u.CurrentTime.Hour()
 
 	// evening (22:00-23:59] or morning (7:00-9:59]
