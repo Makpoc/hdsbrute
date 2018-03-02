@@ -60,7 +60,6 @@ func handleFunc(b *hdsbrute.Brute, s *discordgo.Session, m *discordgo.MessageCre
 		url = fmt.Sprintf("%s?secret=%s", url, backendSecret)
 	}
 
-	fmt.Println(url)
 	resp, err := http.Get(url)
 	if err != nil {
 		log.Printf("Failed to get time zones. Error was: %v\n", err)
@@ -82,7 +81,6 @@ func handleFunc(b *hdsbrute.Brute, s *discordgo.Session, m *discordgo.MessageCre
 }
 
 func handleAllTzFunc(s *discordgo.Session, m *discordgo.MessageCreate, query []string, body io.Reader) {
-	fmt.Println("handleAllTz")
 	var timeZones []models.UserTime
 	err := json.NewDecoder(body).Decode(&timeZones)
 	if err != nil {
@@ -104,7 +102,6 @@ func handleAllTzFunc(s *discordgo.Session, m *discordgo.MessageCreate, query []s
 }
 
 func handleUserTzFunc(s *discordgo.Session, m *discordgo.MessageCreate, query []string, body io.Reader) {
-	fmt.Println("handleUserTz")
 	var timeZone = &models.UserTime{}
 	err := json.NewDecoder(body).Decode(timeZone)
 	if err != nil {
