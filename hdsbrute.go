@@ -149,11 +149,14 @@ func ready(s *discordgo.Session, event *discordgo.Ready) {
 		var statuses = []string{
 			"Hades' Star",
 			"RS with bots",
+			"RS, killing cerb",
+			"cards with colossi",
 			"shipments delivery",
 			"shipments delivery",
 			"shipments delivery",
 			"but low on hydro",
-			"with TimeMachine",
+			"with TM variations",
+			"with sand on Mars",
 		}
 		rand.Seed(time.Now().Unix())
 		for {
@@ -161,7 +164,7 @@ func ready(s *discordgo.Session, event *discordgo.Ready) {
 			if err != nil {
 				fmt.Printf("%#v\n", err)
 			}
-			time.Sleep(5 * time.Minute)
+			time.Sleep(20 * time.Minute)
 		}
 	}()
 }
