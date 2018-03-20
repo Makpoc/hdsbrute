@@ -158,19 +158,26 @@ func findDiscordUser(s *discordgo.Session, m *discordgo.MessageCreate, userArg s
 	var matchedUsernames []string
 
 	userArg = strings.TrimSpace(strings.ToLower(userArg))
+	// fmt.Printf("Searching for: %s\n", userArg)
 	for _, member := range members {
+		// fmt.Printf("Checking exact %s... ", member.User.Username)
 		if matchExactUser(member.User, userArg) {
+			// fmt.Printf("matched")
 			matched = append(matched, member.User)
 			matchedUsernames = append(matchedUsernames, member.User.Username)
 		}
+		// fmt.Println()
 	}
 
 	if len(matched) == 0 {
 		for _, member := range members {
+			// fmt.Printf("Checking partial %s... ", member.User.Username)
 			if matchPartialUser(member.User.Username, userArg) {
+				// fmt.Printf("matched")
 				matched = append(matched, member.User)
 				matchedUsernames = append(matchedUsernames, member.User.Username)
 			}
+			// fmt.Println()
 		}
 	}
 

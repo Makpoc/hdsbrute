@@ -26,7 +26,6 @@ func GetEnvPropOrDefault(key, def string) string {
 
 // GetGuildMembers returns all members, that have the given role(s). If roles list is empty - it returns all members
 func GetGuildMembers(s *discordgo.Session, m *discordgo.MessageCreate, roles []string) ([]*discordgo.Member, error) {
-
 	guild, err := GetGuild(s, m)
 	if err != nil {
 		return nil, err
