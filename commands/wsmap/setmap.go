@@ -12,7 +12,10 @@ import (
 	"github.com/makpoc/hdsbrute"
 )
 
-const setMapCmd = "setmap"
+const (
+	officerRoleId = "351841217153204245"
+	setMapCmd     = "setmap"
+)
 
 // SetMapCommand ...
 var SetMapCommand = hdsbrute.Command{
@@ -25,6 +28,17 @@ var SetMapCommand = hdsbrute.Command{
 
 // handlerFunc answers calls to map and map [coord|color] message
 func setMapHandleFunc(b *hdsbrute.Brute, s *discordgo.Session, m *discordgo.MessageCreate, query []string) {
+	hasPermission, err := hasPermissions(s, m)
+	if err != nil {
+		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Failed to query your permissions. %v", err))
+		return
+	}
+
+	if !hasPermission {
+		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("You do not have permissions to use this command. Please contact an <@&%s>", officerRoleId))
+		return
+	}
+
 	if m.Attachments == nil || len(m.Attachments) == 0 {
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("No picture found! Please attach one to this message.\n%s", getHelpMessage(b)))
 		return
@@ -42,8 +56,7 @@ func setMapHandleFunc(b *hdsbrute.Brute, s *discordgo.Session, m *discordgo.Mess
 		return
 	}
 
-	err := sendPictureToBackend(picType, m.Attachments[0].URL)
-	if err != nil {
+	if err := sendPictureToBackend(picType, m.Attachments[0].URL); err != nil {
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Failed to update picture! %v", err))
 		return
 	}
@@ -52,11 +65,11 @@ func setMapHandleFunc(b *hdsbrute.Brute, s *discordgo.Session, m *discordgo.Mess
 
 func sendPictureToBackend(picType, picUrl string) error {
 	// download the pic from discord's cdn
-	resp, err := http.Get(picUrl)
+	discordResp, err := http.Get(picUrl)
 	if err != nil {
 		return fmt.Errorf("failed to download picture. %v", err)
 	}
-	defer resp.Body.Close()
+	defer discordResp.Body.Close()
 
 	// copy the content to the request to the backend
 	body := new(bytes.Buffer)
@@ -69,7 +82,7 @@ func sendPictureToBackend(picType, picUrl string) error {
 		return err
 	}
 
-	if _, err := io.Copy(part, resp.Body); err != nil {
+	if _, err := io.Copy(part, discordResp.Body); err != nil {
 		return fmt.Errorf("failed to add picture to backend request. %v", err)
 	}
 
@@ -80,8 +93,12 @@ func sendPictureToBackend(picType, picUrl string) error {
 
 	url := fmt.Sprintf("%s/api/v1/map?secret=%s", backendURL, backendSecret)
 
-	if resp, err := http.Post(url, writer.FormDataContentType(), body); err != nil || resp.StatusCode != http.StatusCreated {
-		return fmt.Errorf("failed to send picture to backend. %s %v", resp.Status, err)
+	backendResp, err := http.Post(url, writer.FormDataContentType(), body)
+	if err != nil {
+		return fmt.Errorf("failed to send picture to backend. %v", err)
+	}
+	if backendResp != nil && backendResp.StatusCode != http.StatusCreated {
+		return fmt.Errorf("failed to send picture to backend. %s", backendResp.StatusCode)
 	}
 
 	return nil
@@ -102,4 +119,19 @@ func getHelpMessage(b *hdsbrute.Brute) string {
 	}
 
 	return strings.Join(msg, "\n")
+}
+
+func hasPermissions(s *discordgo.Session, m *discordgo.MessageCreate) (bool, error) {
+	officers, err := hdsbrute.GetGuildMembers(s, m, []string{"officers"})
+	if err != nil {
+		return false, err
+	}
+
+	for _, officer := range officers {
+		if m.Author.Username == officer.User.Username {
+			return true, nil
+		}
+	}
+
+	return false, nil
 }

@@ -26,11 +26,8 @@ func GetEnvPropOrDefault(key, def string) string {
 
 // GetGuildMembers returns all members, that have the given role(s). If roles list is empty - it returns all members
 func GetGuildMembers(s *discordgo.Session, m *discordgo.MessageCreate, roles []string) ([]*discordgo.Member, error) {
-	channel, err := s.Channel(m.ChannelID)
-	if err != nil {
-		return nil, err
-	}
-	guild, err := s.Guild(channel.GuildID)
+
+	guild, err := GetGuild(s, m)
 	if err != nil {
 		return nil, err
 	}
@@ -39,7 +36,7 @@ func GetGuildMembers(s *discordgo.Session, m *discordgo.MessageCreate, roles []s
 
 	for _, member := range guild.Members {
 		for _, role := range member.Roles {
-			if isAllowedRole(getRoleName(guild, role), roles) {
+			if isAllowedRole(GetRoleName(guild, role), roles) {
 				corpMembers = append(corpMembers, member)
 				break // role loop
 			}
@@ -65,11 +62,24 @@ func isAllowedRole(roleName string, allowedRoles []string) bool {
 }
 
 // getRoleName gets the role name from the role ID
-func getRoleName(guild *discordgo.Guild, roleId string) string {
+func GetRoleName(guild *discordgo.Guild, roleId string) string {
 	for _, role := range guild.Roles {
 		if role.ID == roleId {
 			return role.Name
 		}
 	}
 	return ""
+}
+
+func GetGuild(s *discordgo.Session, m *discordgo.MessageCreate) (*discordgo.Guild, error) {
+	channel, err := s.Channel(m.ChannelID)
+	if err != nil {
+		return nil, err
+	}
+	guild, err := s.Guild(channel.GuildID)
+	if err != nil {
+		return nil, err
+	}
+
+	return guild, nil
 }
