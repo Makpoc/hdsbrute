@@ -19,12 +19,11 @@ type mapCommand struct {
 var backendURL string
 var backendSecret string
 
-const backtick = "&bt;"
-const cmd = "map"
+const mapCmd = "map"
 
-// WsCommand ...
-var WsCommand = hdsbrute.Command{
-	Cmd:      cmd,
+// MapCommand ...
+var MapCommand = hdsbrute.Command{
+	Cmd:      mapCmd,
 	HelpFunc: helpFunc,
 	Init: func(b *hdsbrute.Brute) error {
 		backendSecret = b.Config.Secret
@@ -38,7 +37,7 @@ var WsCommand = hdsbrute.Command{
 
 // helpFunc is the function called to display help/usage info
 func helpFunc(b *hdsbrute.Brute, s *discordgo.Session, m *discordgo.MessageCreate) {
-	helpMessage := buildHelpString(fmt.Sprintf("%s%s", b.Prefix, cmd))
+	helpMessage := buildHelpString(fmt.Sprintf("%s%s", b.Prefix, mapCmd))
 	s.ChannelMessageSend(m.ChannelID, helpMessage)
 }
 

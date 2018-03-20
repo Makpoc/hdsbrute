@@ -26,7 +26,8 @@ func main() {
 	brute.AddCommand(coffee.CoffeeCommand)
 	brute.AddCommand(sheet.SGSheetCommand)
 	brute.AddCommand(sheet.CTSheetCommand)
-	brute.AddCommand(wsmap.WsCommand)
+	brute.AddCommand(wsmap.MapCommand)
+	brute.AddCommand(wsmap.SetMapCommand)
 	brute.AddCommand(tz.TimeZoneCommand)
 	brute.AddCommand(userinfo.UserInfoCommand)
 
