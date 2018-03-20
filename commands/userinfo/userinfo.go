@@ -157,7 +157,7 @@ func findDiscordUser(s *discordgo.Session, m *discordgo.MessageCreate, userArg s
 	var matched []*discordgo.User
 	var matchedUsernames []string
 
-	userArg = strings.ToLower(userArg)
+	userArg = strings.TrimSpace(strings.ToLower(userArg))
 	for _, member := range members {
 		if matchExactUser(member.User, userArg) {
 			matched = append(matched, member.User)
@@ -189,7 +189,7 @@ func matchExactUser(given *discordgo.User, wanted string) bool {
 }
 
 func matchPartialUser(given string, wanted string) bool {
-	return strings.Contains(strings.ToLower(given), strings.ToLower(wanted))
+	return strings.Contains(strings.TrimSpace(strings.ToLower(given)), strings.ToLower(wanted))
 }
 
 func createEmbed(u models.User, avatarURL string) *discordgo.MessageEmbed {
