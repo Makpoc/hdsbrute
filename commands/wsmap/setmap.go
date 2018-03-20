@@ -47,7 +47,7 @@ func setMapHandleFunc(b *hdsbrute.Brute, s *discordgo.Session, m *discordgo.Mess
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Failed to update picture! %v", err))
 		return
 	}
-	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("STUB: picture set as [%s]", query[0]))
+	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Picture set as [%s]", query[0]))
 }
 
 func sendPictureToBackend(picType, picUrl string) error {
