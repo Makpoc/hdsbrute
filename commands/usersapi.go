@@ -55,9 +55,7 @@ func (u UserAPI) GetUser(userName string) (*models.User, error) {
 
 	userName = strings.TrimSpace(userName)
 
-	fmt.Printf("Seaching for User: %s\n", userName)
 	for _, user := range users {
-		fmt.Printf("Checking user %v\n", user)
 		if strings.ToLower(userName) == strings.ToLower(user.Name) || hdsbrute.TrimMentionPrefix(userName) == user.DiscordID {
 			return &user, nil
 		}
