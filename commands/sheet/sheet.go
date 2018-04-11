@@ -9,33 +9,17 @@ import (
 )
 
 const (
-	sgSheetEnvKey = "SG_SHEET"
-	ctSheetEnvKey = "CT_SHEET"
+	sheetEnvKey = "SHEET"
 )
 
 // SheetCommand is the command to get the SG Sheet link
-var SGSheetCommand = hdsbrute.Command{
+var SheetCommand = hdsbrute.Command{
 	Cmd:     "sheet",
 	HelpStr: "Provides the link for the google spreadsheet for Star Grazers",
-	Exec:    sgHandleFunc,
+	Exec:    handleFunc,
 }
 
-// SheetCommand is frosty, duh (courtesy of TngB)
-var CTSheetCommand = hdsbrute.Command{
-	Cmd:     "ctsheet",
-	HelpStr: "Provides the link for the google spreadsheet for CometTrans",
-	Exec:    ctHandleFunc,
-}
-
-func sgHandleFunc(b *hdsbrute.Brute, s *discordgo.Session, m *discordgo.MessageCreate, query []string) {
-	handleFunc(b, s, m, query, sgSheetEnvKey)
-}
-
-func ctHandleFunc(b *hdsbrute.Brute, s *discordgo.Session, m *discordgo.MessageCreate, query []string) {
-	handleFunc(b, s, m, query, ctSheetEnvKey)
-}
-
-func handleFunc(b *hdsbrute.Brute, s *discordgo.Session, m *discordgo.MessageCreate, query []string, sheetEnvKey string) {
+func handleFunc(b *hdsbrute.Brute, s *discordgo.Session, m *discordgo.MessageCreate, query []string) {
 	sheetLink, ok := os.LookupEnv(sheetEnvKey)
 	if !ok {
 		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Sheet link not set in environment :poop:"))

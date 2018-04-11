@@ -23,7 +23,7 @@ var FrostyCommand = hdsbrute.Command{
 	Exec: handleFunc,
 }
 
-// handleFunc responds to frosty command with some random stuff
+// handleFunc responds to frosty command with some random stuff. In loving memory of TngB
 func handleFunc(b *hdsbrute.Brute, s *discordgo.Session, m *discordgo.MessageCreate, query []string) {
 	var err error
 	if len(query) == 2 && query[0] == "or" && query[1] == "else" {

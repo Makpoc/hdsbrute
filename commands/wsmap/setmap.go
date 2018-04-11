@@ -6,6 +6,7 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
+	"os"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
@@ -17,9 +18,21 @@ const (
 	setMapCmd     = "setmap"
 )
 
+var adminRoles []string
+
 // SetMapCommand ...
 var SetMapCommand = hdsbrute.Command{
 	Cmd: setMapCmd,
+	Init: func(brute *hdsbrute.Brute) error {
+		envRoles, ok := os.LookupEnv("ADMIN_ROLES")
+		if ok {
+			for _, role := range strings.Split(envRoles, ",") {
+				adminRoles = append(adminRoles, role)
+			}
+		}
+
+		return nil
+	},
 	HelpFunc: func(b *hdsbrute.Brute, s *discordgo.Session, m *discordgo.MessageCreate) {
 		s.ChannelMessageSend(m.ChannelID, getHelpMessage(b))
 	},
@@ -112,7 +125,7 @@ func getHelpMessage(b *hdsbrute.Brute) string {
 		fmt.Sprintf("**Usage**:"),
 		fmt.Sprintf("Attach a picture to a message and set its text as follows:"),
 		fmt.Sprintf(""),
-		fmt.Sprintf("`%s%s [labels|screenshot]`", b.Prefix, mapCmd),
+		fmt.Sprintf("`%s%s [labels|screenshot]`", b.Prefix, setMapCmd),
 		fmt.Sprintf(""),
 		fmt.Sprintf("**labels** is the layer with planet names and levels. It needs to be a transparent `.png` file"),
 		fmt.Sprintf("**screenshot** is the screenshot of the WS cropped to the edges of the outer hexes. Format must be `.jpg`"),
@@ -122,7 +135,7 @@ func getHelpMessage(b *hdsbrute.Brute) string {
 }
 
 func hasPermissions(s *discordgo.Session, m *discordgo.MessageCreate) (bool, error) {
-	officers, err := hdsbrute.GetGuildMembers(s, m, []string{"officers"})
+	officers, err := hdsbrute.GetMembersByRole(s, m.ChannelID, adminRoles)
 	if err != nil {
 		return false, err
 	}

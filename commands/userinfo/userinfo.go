@@ -1,10 +1,8 @@
 package userinfo
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
-	"net/http"
 	"os"
 	"strings"
 	"time"
@@ -12,22 +10,22 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/makpoc/hades-api/sheet/models"
 	"github.com/makpoc/hdsbrute"
+	"github.com/makpoc/hdsbrute/commands"
 )
-
-var backendURL string
-var backendSecret string
 
 var memberRoles []string
 
 const cmd = "info"
+
+var userAPI commands.UserAPI
 
 // UserInfoCommand ...
 var UserInfoCommand = hdsbrute.Command{
 	Cmd:      cmd,
 	HelpFunc: helpFunc,
 	Init: func(brute *hdsbrute.Brute) error {
-		backendSecret = brute.Config.Secret
-		backendURL = brute.Config.BackendURL
+		userAPI = commands.NewUserApi(brute.Config.BackendURL, brute.Config.Secret)
+
 		envRoles, ok := os.LookupEnv("MEMBER_ROLES")
 		if ok {
 			for _, role := range strings.Split(envRoles, ",") {
@@ -61,145 +59,40 @@ func handleFunc(b *hdsbrute.Brute, s *discordgo.Session, m *discordgo.MessageCre
 		return
 	}
 
-	url := fmt.Sprintf("%s/api/v1/users", backendURL)
-	if backendSecret != "" {
-		url = fmt.Sprintf("%s?secret=%s", url, backendSecret)
-	}
-
-	backendUsers, err := getSheetUsers(url)
+	backendUser, err := userAPI.GetUser(strings.TrimSpace(strings.Join(query[0:], " ")))
 	if err != nil {
-		log.Printf("Failed to get Sheet Users: %v", err)
-		_, err = s.ChannelMessageSend(m.ChannelID, "Failed to get sheet users :poop:")
-		return
-	}
-
-	userArg := strings.TrimSpace(strings.Join(query[0:], " "))
-	// search the sheet for the provided arguments first
-	if backendUser, err := getBackendUser(userArg, backendUsers); err == nil {
-		avatarURL := ""
-		if discordUser, err := findDiscordUser(s, m, backendUser.Name); err == nil {
-			avatarURL = discordUser.AvatarURL("")
-		}
-		_, err = s.ChannelMessageSendEmbed(m.ChannelID, createEmbed(backendUser, avatarURL))
+		_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Failed to get user from sheet: %v", err.Error()))
 		if err != nil {
-			log.Printf("Failed to send User Info message: %v\n", err)
-		}
-		return
-	}
-
-	discordUser, err := findDiscordUser(s, m, userArg)
-	if err == nil {
-		// matching discord user found
-		if backendUser, err := getBackendUser(discordUser.Username, backendUsers); err == nil {
-			_, err = s.ChannelMessageSendEmbed(m.ChannelID, createEmbed(backendUser, discordUser.AvatarURL("")))
-			if err != nil {
-				log.Printf("Failed to send User Info message: %v\n", err)
-			}
-			return
-		}
-	} else {
-		if strings.HasPrefix(err.Error(), "multiple users matched") {
-			_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Ambiguous user - *%s*: %s", userArg, err.Error()))
-			if err != nil {
-				log.Printf("Failed to send message: %v\n", err)
-			}
-			return
+			log.Printf("Failed to send message: %v\n", err)
 		}
 	}
 
-	_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("No such user in sheet database: %s", userArg))
+	avatarURL := ""
+	if discordUser, err := hdsbrute.GetDiscordUser(s, m, backendUser.Name); err == nil {
+		avatarURL = discordUser.AvatarURL("")
+	}
+	_, err = s.ChannelMessageSendEmbed(m.ChannelID, createEmbed(backendUser, avatarURL))
 	if err != nil {
-		log.Printf("Failed to send message: %v\n", err)
+		log.Printf("Failed to send User Info message: %v\n", err)
 	}
 }
 
-func getBackendUser(userName string, backendUsers models.Users) (models.User, error) {
-	for _, backendUser := range backendUsers {
-		if strings.ToLower(userName) == strings.ToLower(backendUser.Name) {
-			return backendUser, nil
-		}
-	}
-
-	for _, backendUser := range backendUsers {
-		if matchPartialUser(backendUser.Name, userName) {
-			return backendUser, nil
-		}
-	}
-	return models.User{}, fmt.Errorf("user not found in sheet database")
-}
-
-func getSheetUsers(url string) (models.Users, error) {
-	resp, err := http.Get(url)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get user info: %v", err)
-	}
-
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("failed to get user info. Status was: %s", resp.Status)
-	}
-
-	var users models.Users
-	err = json.NewDecoder(resp.Body).Decode(&users)
-	if err != nil {
-		return nil, fmt.Errorf("failed to decode user info: %v", err)
-	}
-
-	return users, nil
-}
-
-func findDiscordUser(s *discordgo.Session, m *discordgo.MessageCreate, userArg string) (*discordgo.User, error) {
-	members, err := hdsbrute.GetGuildMembers(s, m, memberRoles)
+func findDiscordUser(s *discordgo.Session, m *discordgo.MessageCreate, discordId string) (*discordgo.User, error) {
+	members, err := hdsbrute.GetMembersByRole(s, m.ChannelID, memberRoles)
 	if err != nil {
 		return nil, err
 	}
 
-	var matched []*discordgo.User
-	var matchedUsernames []string
-
-	userArg = strings.TrimSpace(strings.ToLower(userArg))
-	// fmt.Printf("Searching for: %s\n", userArg)
+	discordId = strings.TrimSpace(strings.TrimLeft(strings.TrimRight(discordId, ">"), "<@"))
 	for _, member := range members {
-		// fmt.Printf("Checking exact %s... ", member.User.Username)
-		if matchExactUser(member.User, userArg) {
-			// fmt.Printf("matched")
-			matched = append(matched, member.User)
-			matchedUsernames = append(matchedUsernames, member.User.Username)
-		}
-		// fmt.Println()
-	}
-
-	if len(matched) == 0 {
-		for _, member := range members {
-			// fmt.Printf("Checking partial %s... ", member.User.Username)
-			if matchPartialUser(member.User.Username, userArg) {
-				// fmt.Printf("matched")
-				matched = append(matched, member.User)
-				matchedUsernames = append(matchedUsernames, member.User.Username)
-			}
-			// fmt.Println()
+		if member.User.ID == discordId {
+			return member.User, nil
 		}
 	}
-
-	switch len(matched) {
-	case 0:
-		return nil, fmt.Errorf("failed to find user: %s", userArg)
-	case 1:
-		return matched[0], nil
-	default:
-		return nil, fmt.Errorf("multiple users matched %s: %s", userArg, strings.Join(matchedUsernames, ", "))
-	}
+	return nil, fmt.Errorf("failed to find user with ID: %s", discordId)
 }
 
-func matchExactUser(given *discordgo.User, wanted string) bool {
-	return strings.ToLower(given.Username) == wanted || given.ID == strings.TrimSuffix(strings.TrimPrefix(wanted, "<@"), ">")
-}
-
-func matchPartialUser(given string, wanted string) bool {
-	return strings.Contains(strings.TrimSpace(strings.ToLower(given)), strings.ToLower(wanted))
-}
-
-func createEmbed(u models.User, avatarURL string) *discordgo.MessageEmbed {
+func createEmbed(u *models.User, avatarURL string) *discordgo.MessageEmbed {
 	embed := &discordgo.MessageEmbed{
 		Author: &discordgo.MessageEmbedAuthor{},
 		Color:  0x00ff00,
@@ -242,7 +135,7 @@ func createEmbed(u models.User, avatarURL string) *discordgo.MessageEmbed {
 	return embed
 }
 
-func formatBSInfo(u models.User) string {
+func formatBSInfo(u *models.User) string {
 	info := []string{}
 	info = append(info, fmt.Sprintf("**Role**: %s", u.BsRole))
 	info = append(info, fmt.Sprintf("**Weapon**: %s", u.BsWeapon))
@@ -253,7 +146,7 @@ func formatBSInfo(u models.User) string {
 	return strings.Join(info, "\n")
 }
 
-func formatTSInfo(u models.User) string {
+func formatTSInfo(u *models.User) string {
 	info := []string{}
 	info = append(info, fmt.Sprintf("**Capacity**: %s", u.TsCapacity))
 	info = append(info, "**Modules**:")
@@ -262,7 +155,7 @@ func formatTSInfo(u models.User) string {
 	return strings.Join(info, "\n")
 }
 
-func formatMinerInfo(u models.User) string {
+func formatMinerInfo(u *models.User) string {
 	info := []string{}
 	info = append(info, fmt.Sprintf("**Level**: %s", u.MinerLevel))
 	info = append(info, "**Modules**:")

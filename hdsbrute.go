@@ -38,6 +38,8 @@ func New(token string) (*Brute, error) {
 		return nil, fmt.Errorf("failed to query @me: %v", err)
 	}
 
+	fmt.Printf("%s reporting for duty!", u.Username)
+
 	brute.BotID = u.ID
 
 	s.AddHandler(ready)

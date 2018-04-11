@@ -122,7 +122,7 @@ func handleUserTzFunc(s *discordgo.Session, m *discordgo.MessageCreate, query []
 	}
 
 	var userAvatarURL string
-	discordUser, err := getUserFromArg(s, m, timeZone.UserName)
+	discordUser, err := hdsbrute.GetDiscordUser(s, m, timeZone.UserName)
 	if err != nil {
 	} else {
 		userAvatarURL = discordUser.AvatarURL("")
@@ -177,25 +177,6 @@ func getEmbedColor(u *models.UserTime) int {
 
 	// day 10:00-21:59
 	return 0x00ff00 // green
-}
-
-func getUserFromArg(s *discordgo.Session, m *discordgo.MessageCreate, userArg string) (*discordgo.User, error) {
-	channel, err := s.Channel(m.ChannelID)
-	if err != nil {
-		return nil, err
-	}
-	guild, err := s.Guild(channel.GuildID)
-	if err != nil {
-		return nil, err
-	}
-	members := guild.Members
-
-	for _, member := range members {
-		if strings.ToLower(member.User.Username) == strings.ToLower(userArg) || member.User.ID == strings.TrimSuffix(strings.TrimPrefix(userArg, "<@"), ">") {
-			return member.User, nil
-		}
-	}
-	return nil, fmt.Errorf("failed to find user: %s", userArg)
 }
 
 func formatAllTzMessage(tz []models.UserTime, maxChars int) []string {

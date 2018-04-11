@@ -1,7 +1,9 @@
 package hdsbrute
 
 import (
+	"fmt"
 	"os"
+	"strings"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -25,8 +27,8 @@ func GetEnvPropOrDefault(key, def string) string {
 }
 
 // GetGuildMembers returns all members, that have the given role(s). If roles list is empty - it returns all members
-func GetGuildMembers(s *discordgo.Session, m *discordgo.MessageCreate, roles []string) ([]*discordgo.Member, error) {
-	guild, err := GetGuild(s, m)
+func GetMembersByRole(s *discordgo.Session, channelId string, roles []string) ([]*discordgo.Member, error) {
+	guild, err := GetGuild(s, channelId)
 	if err != nil {
 		return nil, err
 	}
@@ -70,8 +72,8 @@ func GetRoleName(guild *discordgo.Guild, roleId string) string {
 	return ""
 }
 
-func GetGuild(s *discordgo.Session, m *discordgo.MessageCreate) (*discordgo.Guild, error) {
-	channel, err := s.Channel(m.ChannelID)
+func GetGuild(s *discordgo.Session, channelId string) (*discordgo.Guild, error) {
+	channel, err := s.Channel(channelId)
 	if err != nil {
 		return nil, err
 	}
@@ -81,4 +83,27 @@ func GetGuild(s *discordgo.Session, m *discordgo.MessageCreate) (*discordgo.Guil
 	}
 
 	return guild, nil
+}
+
+func GetDiscordUser(s *discordgo.Session, m *discordgo.MessageCreate, userName string) (*discordgo.User, error) {
+	channel, err := s.Channel(m.ChannelID)
+	if err != nil {
+		return nil, err
+	}
+	guild, err := s.Guild(channel.GuildID)
+	if err != nil {
+		return nil, err
+	}
+	members := guild.Members
+
+	for _, member := range members {
+		if strings.ToLower(member.User.Username) == strings.ToLower(userName) || member.User.Mention() == userName {
+			return member.User, nil
+		}
+	}
+	return nil, fmt.Errorf("failed to find user: %s", userName)
+}
+
+func TrimMentionPrefix(mention string) string {
+	return strings.TrimSpace(strings.TrimRight(strings.TrimLeft(strings.TrimLeft(mention, "<@!"), "<@"), ">"))
 }
