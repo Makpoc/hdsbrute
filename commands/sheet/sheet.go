@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	sheetEnvKey = "SHEET"
+	sheetEnvKey = "SHEET_ID"
 )
 
 // SheetCommand is the command to get the SG Sheet link
