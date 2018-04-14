@@ -20,7 +20,7 @@ var SheetCommand = hdsbrute.Command{
 }
 
 func handleFunc(b *hdsbrute.Brute, s *discordgo.Session, m *discordgo.MessageCreate, query []string) {
-	sheetLink, ok := os.LookupEnv(sheetEnvKey)
+	sheetId, ok := os.LookupEnv(sheetEnvKey)
 	if !ok {
 		_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Sheet link not set in environment :poop:"))
 		if err != nil {
@@ -28,6 +28,8 @@ func handleFunc(b *hdsbrute.Brute, s *discordgo.Session, m *discordgo.MessageCre
 		}
 		return
 	}
+
+	sheetLink := fmt.Sprintf("https://docs.google.com/spreadsheets/d/%s", sheetId)
 
 	_, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Here you go **%s**: %s", m.Author.Username, sheetLink))
 	if err != nil {
