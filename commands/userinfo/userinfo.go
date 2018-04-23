@@ -54,27 +54,28 @@ func helpFunc(b *hdsbrute.Brute, s *discordgo.Session, m *discordgo.MessageCreat
 
 // handleFunc handles requests for the info command
 func handleFunc(b *hdsbrute.Brute, s *discordgo.Session, m *discordgo.MessageCreate, query []string) {
-	if len(query) == 0 {
-		helpFunc(b, s, m)
-		return
-	}
-
-	backendUser, err := userAPI.GetUser(strings.TrimSpace(strings.Join(query[0:], " ")))
-	if err != nil {
-		_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Failed to get user from sheet: %v", err.Error()))
-		if err != nil {
-			log.Printf("Failed to send message: %v\n", err)
-		}
-	}
-
-	avatarURL := ""
-	if discordUser, err := hdsbrute.GetDiscordUser(s, m, backendUser.Name); err == nil {
-		avatarURL = discordUser.AvatarURL("")
-	}
-	_, err = s.ChannelMessageSendEmbed(m.ChannelID, createEmbed(backendUser, avatarURL))
-	if err != nil {
-		log.Printf("Failed to send User Info message: %v\n", err)
-	}
+	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("`%s%s` is currently disabled. Check `%s%s` for module info", b.Prefix, cmd, b.Prefix, "sheet"))
+	//	if len(query) == 0 {
+	//		helpFunc(b, s, m)
+	//		return
+	//	}
+	//
+	//	backendUser, err := userAPI.GetUser(strings.TrimSpace(strings.Join(query[0:], " ")))
+	//	if err != nil {
+	//		_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Failed to get user from sheet: %v", err.Error()))
+	//		if err != nil {
+	//			log.Printf("Failed to send message: %v\n", err)
+	//		}
+	//	}
+	//
+	//	avatarURL := ""
+	//	if discordUser, err := hdsbrute.GetDiscordUser(s, m, backendUser.Name); err == nil {
+	//		avatarURL = discordUser.AvatarURL("")
+	//	}
+	//	_, err = s.ChannelMessageSendEmbed(m.ChannelID, createEmbed(backendUser, avatarURL))
+	//	if err != nil {
+	//		log.Printf("Failed to send User Info message: %v\n", err)
+	//	}
 }
 
 func findDiscordUser(s *discordgo.Session, m *discordgo.MessageCreate, discordId string) (*discordgo.User, error) {
