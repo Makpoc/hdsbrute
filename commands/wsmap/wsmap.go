@@ -43,16 +43,25 @@ func helpFunc(b *hdsbrute.Brute, s *discordgo.Session, m *discordgo.MessageCreat
 
 // buildHelpString builds the help and usage string for the map
 func buildHelpString(cmdWithPrefix string) string {
-	header := fmt.Sprintf("`%s` displays the map for the current WS with coordinates overlayed on top and optional sector highlighting.\n\n**Usage**: `%s [[color] [coord...]...] message`\n\n**Examples**:", cmdWithPrefix, cmdWithPrefix)
-	var subCommands []string
+	var commands []string
+	commands = append(commands, fmt.Sprintf("**%s** displays the map for the current WS with coordinates overlayed on top and optional sector highlighting.", cmdWithPrefix))
+	commands = append(commands, "")
+	commands = append(commands, "**Usage:**")
+	commands = append(commands, fmt.Sprintf("``%s [[color] [coord...]...] message``", cmdWithPrefix))
+	commands = append(commands, "")
+	commands = append(commands, "**Examples:**")
+	commands = append(commands, fmt.Sprintf("``%s green d2 @player1 @player2 form defensive line``", cmdWithPrefix))
+	commands = append(commands, fmt.Sprintf("``%s orange e1 e2 e3 red d3 @squadA attack @miner1 Void D3 to take out teleport nodes``", cmdWithPrefix))
+	commands = append(commands, "")
+	commands = append(commands, "**Color Codes:**")
+	commands = append(commands, "Green - Defense")
+	commands = append(commands, "Orange - Offense")
+	commands = append(commands, "Pink - Mining")
+	commands = append(commands, "Red - Void")
+	commands = append(commands, "Yellow - Crunch")
+	commands = append(commands, "Warn - RED ALERT!!!")
 
-	subCommands = append(subCommands, fmt.Sprintf("`%s` - Displays just the map with the coordinates", cmdWithPrefix))
-	subCommands = append(subCommands, fmt.Sprintf("`%s [coord...]` - Highlights the sector(s) specified by the provided coordinates. e.g. `%s a1 b2 c3`", cmdWithPrefix, cmdWithPrefix))
-	subCommands = append(subCommands, fmt.Sprintf("`%s [[color] [coord...]...]` - Highlights the provided coordinates with the color that comes before them. E.g. `%s orange a3 green b4 b5 pink d3`. Currently supported colors are: **orange**, **yellow**, **green**, **pink**, **red** and **warn**.", cmdWithPrefix, cmdWithPrefix))
-	subCommands = append(subCommands, fmt.Sprintf("`%s [color|coords...] [message]` - Same as above but also adds message with details. E.g. `%s orange d3 pink b2 b3 BS defend at d3. Miners void b2 b3`.", cmdWithPrefix, cmdWithPrefix))
-
-	finalMessage := fmt.Sprintf("%s\n%s", header, strings.Join(subCommands, "\n"))
-
+	finalMessage := strings.Join(commands, "\n")
 	return strings.TrimRight(finalMessage, "\n")
 }
 
