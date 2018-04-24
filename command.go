@@ -7,7 +7,7 @@ type HandlerFn func(*Brute, *discordgo.Session, *discordgo.MessageCreate, []stri
 
 // Command represents a command
 type Command struct {
-	Cmd      string
+	Cmd      []string
 	Args     []string
 	HelpStr  string
 	HelpFunc func(*Brute, *discordgo.Session, *discordgo.MessageCreate)

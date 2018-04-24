@@ -21,7 +21,7 @@ const cmd = "tz"
 
 // TimeZoneCommand ...
 var TimeZoneCommand = hdsbrute.Command{
-	Cmd:      cmd,
+	Cmd:      []string{cmd},
 	HelpFunc: helpFunc,
 	Init: func(brute *hdsbrute.Brute) error {
 		backendSecret = brute.Config.Secret
@@ -94,10 +94,15 @@ func handleAllTzFunc(s *discordgo.Session, m *discordgo.MessageCreate, query []s
 		if len(message) == 0 {
 			continue
 		}
-		_, err = s.ChannelMessageSend(m.ChannelID, message)
+		tzMsg, err := s.ChannelMessageSend(m.ChannelID, message)
 		if err != nil {
 			log.Printf("Failed to send TimeZones message: %v\n", err)
+			return
 		}
+		time.AfterFunc(time.Second*30, func() {
+			s.ChannelMessageDelete(m.ChannelID, m.ID)
+			s.ChannelMessageDelete(tzMsg.ChannelID, tzMsg.ID)
+		})
 	}
 }
 
@@ -180,6 +185,9 @@ func getAvailPeriods(u *models.UserTime) string {
 		availPeriods = append(availPeriods, fmt.Sprintf("- %s", avail.String()))
 	}
 
+	if availPeriods == nil {
+		return "Unknown"
+	}
 	return strings.Join(availPeriods, "\n")
 }
 

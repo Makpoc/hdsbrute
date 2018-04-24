@@ -23,7 +23,7 @@ const mapCmd = "map"
 
 // MapCommand ...
 var MapCommand = hdsbrute.Command{
-	Cmd:      mapCmd,
+	Cmd:      []string{mapCmd},
 	HelpFunc: helpFunc,
 	Init: func(b *hdsbrute.Brute) error {
 		backendSecret = b.Config.Secret

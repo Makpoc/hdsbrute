@@ -10,7 +10,7 @@ import (
 
 // CoffeeCommand is dummy command to share a coffe recipe
 var CoffeeCommand = hdsbrute.Command{
-	Cmd:     "coffee",
+	Cmd:     []string{"coffee"},
 	HelpStr: "Coffee is Love, Coffe is Life",
 	Init: func(b *hdsbrute.Brute) error {
 		log.Println("Coffee brewing!")

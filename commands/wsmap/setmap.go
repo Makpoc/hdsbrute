@@ -22,7 +22,7 @@ var adminRoles []string
 
 // SetMapCommand ...
 var SetMapCommand = hdsbrute.Command{
-	Cmd: setMapCmd,
+	Cmd: []string{setMapCmd},
 	Init: func(brute *hdsbrute.Brute) error {
 		envRoles, ok := os.LookupEnv("ADMIN_ROLES")
 		if ok {

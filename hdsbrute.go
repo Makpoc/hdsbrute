@@ -121,8 +121,10 @@ func (b *Brute) Close() error {
 
 func (b *Brute) findCommand(query string) *Command {
 	for _, c := range b.Commands {
-		if strings.ToLower(query) == strings.ToLower(c.Cmd) {
-			return &c
+		for _, cAndAliases := range c.Cmd {
+			if strings.ToLower(query) == strings.ToLower(cAndAliases) {
+				return &c
+			}
 		}
 	}
 	return nil

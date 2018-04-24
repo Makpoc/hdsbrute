@@ -14,7 +14,7 @@ const (
 
 // SheetCommand is the command to get the SG Sheet link
 var SheetCommand = hdsbrute.Command{
-	Cmd:     "sheet",
+	Cmd:     []string{"sheet"},
 	HelpStr: "Provides the link for the google spreadsheet for Star Grazers",
 	Exec:    handleFunc,
 }

@@ -7,8 +7,10 @@ import (
 	"syscall"
 
 	"github.com/makpoc/hdsbrute"
+	"github.com/makpoc/hdsbrute/commands/available"
 	"github.com/makpoc/hdsbrute/commands/coffee"
 	"github.com/makpoc/hdsbrute/commands/frosty"
+	"github.com/makpoc/hdsbrute/commands/olaf"
 	"github.com/makpoc/hdsbrute/commands/sheet"
 	"github.com/makpoc/hdsbrute/commands/tz"
 	"github.com/makpoc/hdsbrute/commands/userinfo"
@@ -29,6 +31,8 @@ func main() {
 	brute.AddCommand(wsmap.SetMapCommand)
 	brute.AddCommand(tz.TimeZoneCommand)
 	brute.AddCommand(userinfo.UserInfoCommand)
+	brute.AddCommand(olaf.Command)
+	brute.AddCommand(available.Command)
 
 	err = brute.Start()
 	if err != nil {

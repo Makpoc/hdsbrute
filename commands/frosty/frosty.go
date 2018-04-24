@@ -14,7 +14,7 @@ import (
 
 // FrostyCommand is frosty, duh (:beers: TngB)
 var FrostyCommand = hdsbrute.Command{
-	Cmd:     "frosty",
+	Cmd:     []string{"frosty"},
 	HelpStr: "Frosty is :cool: :snowman2:",
 	Init: func(b *hdsbrute.Brute) error {
 		log.Println("Frosty ready!")
