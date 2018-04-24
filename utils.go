@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/makpoc/hades-api/sheet/models"
 )
 
 // contains checks if a set of strings contains given value
@@ -106,4 +107,35 @@ func GetDiscordUser(s *discordgo.Session, m *discordgo.MessageCreate, userName s
 
 func TrimMentionPrefix(mention string) string {
 	return strings.TrimSpace(strings.TrimRight(strings.TrimLeft(strings.TrimLeft(mention, "<@!"), "<@"), ">"))
+}
+
+func IsAvailable(u *models.UserTime) bool {
+	avails := u.Availability
+	now := u.CurrentTime
+	nowH := now.Hour()
+	nowM := now.Minute()
+	for _, avail := range avails {
+		fromH := int(avail.From.Hours())
+		fromM := int(avail.From.Minutes()) - fromH*60
+		toH := int(avail.To.Hours())
+		toM := int(avail.To.Minutes()) - toH*60
+		if fromH > toH {
+			// crosses midnight
+			// e.g. 23-2
+			if nowH > fromH || nowH < toH {
+				return true
+			}
+			if (nowH == fromH && nowM >= fromM) || (nowH == toH && nowM > toM) {
+				return true
+			}
+		} else {
+			if nowH > fromH && nowH < toH {
+				return true
+			}
+			if nowH == fromH && nowM >= fromM && (nowH < toH || nowH == toH && nowM <= toM) {
+				return true
+			}
+		}
+	}
+	return false
 }

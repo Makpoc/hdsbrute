@@ -136,9 +136,16 @@ func handleUserTzFunc(s *discordgo.Session, m *discordgo.MessageCreate, query []
 }
 
 func createTzEmbed(u *models.UserTime, avatarURL string) *discordgo.MessageEmbed {
+	isAvail := hdsbrute.IsAvailable(u)
+
+	var color = 0xff0000 // red
+	if isAvail {
+		color = 0x00ff00 // green
+	}
+
 	embed := &discordgo.MessageEmbed{
 		Author: &discordgo.MessageEmbedAuthor{},
-		Color:  getEmbedColor(u),
+		Color:  color,
 		Title:  fmt.Sprintf("TimeZone for %s", u.UserName),
 		Fields: []*discordgo.MessageEmbedField{
 			&discordgo.MessageEmbedField{
@@ -149,6 +156,11 @@ func createTzEmbed(u *models.UserTime, avatarURL string) *discordgo.MessageEmbed
 			&discordgo.MessageEmbedField{
 				Name:   "Offset",
 				Value:  fmt.Sprintf("%s", u.Offset),
+				Inline: true,
+			},
+			&discordgo.MessageEmbedField{
+				Name:   "Available",
+				Value:  getAvailPeriods(u),
 				Inline: true,
 			},
 		},
@@ -162,21 +174,13 @@ func createTzEmbed(u *models.UserTime, avatarURL string) *discordgo.MessageEmbed
 	return embed
 }
 
-// getEmbedColor calculates the color based on the time of the day for the provided user
-func getEmbedColor(u *models.UserTime) int {
-	uHour := u.CurrentTime.Hour()
-
-	// evening (22:00-23:59] or morning (7:00-9:59]
-	if (uHour >= 22) || (uHour > 7 && uHour <= 9) {
-		return 0xff9900 // orange
-	}
-	// night - (0:00-6:59]
-	if uHour >= 0 && uHour <= 6 {
-		return 0xff0000 // red
+func getAvailPeriods(u *models.UserTime) string {
+	var availPeriods []string
+	for _, avail := range u.Availability {
+		availPeriods = append(availPeriods, fmt.Sprintf("- %s", avail.String()))
 	}
 
-	// day 10:00-21:59
-	return 0x00ff00 // green
+	return strings.Join(availPeriods, "\n")
 }
 
 func formatAllTzMessage(tz []models.UserTime, maxChars int) []string {
