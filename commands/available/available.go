@@ -77,10 +77,6 @@ func respondWithAvailables(s *discordgo.Session, m *discordgo.MessageCreate, que
 		log.Printf("Failed to send available users message: %v\n", err)
 		return
 	}
-	err = s.ChannelMessageDelete(m.ChannelID, m.ID)
-	if err != nil {
-		log.Printf("Failed to delete .avail trigger message: %v", err)
-	}
 	time.AfterFunc(time.Second*30, func() {
 		err = s.ChannelMessageDelete(m.ChannelID, m.ID)
 		if err != nil {
