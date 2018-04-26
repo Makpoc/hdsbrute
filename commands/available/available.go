@@ -82,6 +82,10 @@ func respondWithAvailables(s *discordgo.Session, m *discordgo.MessageCreate, que
 		log.Printf("Failed to delete .avail trigger message: %v", err)
 	}
 	time.AfterFunc(time.Second*30, func() {
+		err = s.ChannelMessageDelete(m.ChannelID, m.ID)
+		if err != nil {
+			log.Printf("Failed to delete .avail trigger message: %v", err)
+		}
 		err := s.ChannelMessageDelete(embedMsg.ChannelID, embedMsg.ID)
 		if err != nil {
 			log.Printf("Failed to delete .avail embed: %v", err)
