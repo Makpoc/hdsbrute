@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/makpoc/hades-api/sheet/models"
@@ -71,17 +72,28 @@ func respondWithAvailables(s *discordgo.Session, m *discordgo.MessageCreate, que
 	}
 
 	embed := prepareEmbed(timeZones)
-	_, err = s.ChannelMessageSendEmbed(m.ChannelID, embed)
+	embedMsg, err := s.ChannelMessageSendEmbed(m.ChannelID, embed)
 	if err != nil {
 		log.Printf("Failed to send available users message: %v\n", err)
+		return
 	}
+	err = s.ChannelMessageDelete(m.ChannelID, m.ID)
+	if err != nil {
+		log.Printf("Failed to delete .avail trigger message: %v", err)
+	}
+	time.AfterFunc(time.Second*30, func() {
+		err := s.ChannelMessageDelete(embedMsg.ChannelID, embedMsg.ID)
+		if err != nil {
+			log.Printf("Failed to delete .avail embed: %v", err)
+		}
+	})
 }
 
 func prepareEmbed(users models.UserTimes) *discordgo.MessageEmbed {
 	var availableUsers []string
 	for _, u := range users {
 		if hdsbrute.IsAvailable(&u) {
-			availableUsers = append(availableUsers, fmt.Sprintf("- %s", u.UserName))
+			availableUsers = append(availableUsers, fmt.Sprintf("- %s (%s)", u.UserName, u.CurrentTime.Format(time.Kitchen)))
 		}
 	}
 
