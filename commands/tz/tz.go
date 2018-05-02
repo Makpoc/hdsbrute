@@ -123,21 +123,25 @@ func handleUserTzFunc(s *discordgo.Session, m *discordgo.MessageCreate, query []
 		_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("No such user in TZ database: %s", strings.Join(query, " ")))
 		if err != nil {
 			log.Printf("Failed to send message: %v\n", err)
+			return
 		}
 	}
 
-	var userAvatarURL string
+	var userAvatarURL = "https://vignette.wikia.nocookie.net/dragcave/images/6/6e/No_avatar.jpg"
 	discordUser, err := hdsbrute.GetDiscordUser(s, m, timeZone.UserName)
-	if err != nil {
-	} else {
+	if err == nil {
 		userAvatarURL = discordUser.AvatarURL("")
 	}
 
-	_, err = s.ChannelMessageSendEmbed(m.ChannelID, createTzEmbed(timeZone, userAvatarURL))
+	tzMsg, err := s.ChannelMessageSendEmbed(m.ChannelID, createTzEmbed(timeZone, userAvatarURL))
 	if err != nil {
 		log.Printf("Failed to send TimeZones message: %v\n", err)
 		return
 	}
+	time.AfterFunc(time.Second*30, func() {
+		s.ChannelMessageDelete(m.ChannelID, m.ID)
+		s.ChannelMessageDelete(tzMsg.ChannelID, tzMsg.ID)
+	})
 }
 
 func createTzEmbed(u *models.UserTime, avatarURL string) *discordgo.MessageEmbed {
@@ -166,7 +170,7 @@ func createTzEmbed(u *models.UserTime, avatarURL string) *discordgo.MessageEmbed
 			&discordgo.MessageEmbedField{
 				Name:   "Available",
 				Value:  getAvailPeriods(u),
-				Inline: true,
+				Inline: false,
 			},
 		},
 	}
