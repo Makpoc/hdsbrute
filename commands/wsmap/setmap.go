@@ -6,7 +6,6 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
-	"os"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
@@ -14,44 +13,22 @@ import (
 )
 
 const (
-	officerRoleId = "351841217153204245"
-	setMapCmd     = "setmap"
+	botAdminRoleId = "441862929361403904"
+	setMapCmd      = "setmap"
 )
-
-var adminRoles []string
 
 // SetMapCommand ...
 var SetMapCommand = hdsbrute.Command{
 	Cmd: []string{setMapCmd},
-	Init: func(brute *hdsbrute.Brute) error {
-		envRoles, ok := os.LookupEnv("ADMIN_ROLES")
-		if ok {
-			for _, role := range strings.Split(envRoles, ",") {
-				adminRoles = append(adminRoles, role)
-			}
-		}
-
-		return nil
-	},
 	HelpFunc: func(b *hdsbrute.Brute, s *discordgo.Session, m *discordgo.MessageCreate) {
 		s.ChannelMessageSend(m.ChannelID, getHelpMessage(b))
 	},
 	Exec: setMapHandleFunc,
+	Auth: hdsbrute.GetAdminRoles(),
 }
 
 // handlerFunc answers calls to map and map [coord|color] message
 func setMapHandleFunc(b *hdsbrute.Brute, s *discordgo.Session, m *discordgo.MessageCreate, query []string) {
-	hasPermission, err := hasPermissions(s, m)
-	if err != nil {
-		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Failed to query your permissions. %v", err))
-		return
-	}
-
-	if !hasPermission {
-		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("You do not have permissions to use this command. Please contact an <@&%s>", officerRoleId))
-		return
-	}
-
 	if m.Attachments == nil || len(m.Attachments) == 0 {
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("No picture found! Please attach one to this message.\n%s", getHelpMessage(b)))
 		return
@@ -132,19 +109,4 @@ func getHelpMessage(b *hdsbrute.Brute) string {
 	}
 
 	return strings.Join(msg, "\n")
-}
-
-func hasPermissions(s *discordgo.Session, m *discordgo.MessageCreate) (bool, error) {
-	officers, err := hdsbrute.GetMembersByRole(s, m.ChannelID, adminRoles)
-	if err != nil {
-		return false, err
-	}
-
-	for _, officer := range officers {
-		if m.Author.Username == officer.User.Username {
-			return true, nil
-		}
-	}
-
-	return false, nil
 }

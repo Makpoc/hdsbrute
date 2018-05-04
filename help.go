@@ -7,6 +7,15 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
+func (b *Brute) displayHelp(m *discordgo.MessageCreate, query []string) {
+	var commands []*Command
+	cmd := b.findCommand(query)
+	if cmd != nil {
+		commands = append(commands, cmd)
+	}
+	DisplayHelp(b, m, commands)
+}
+
 // DisplayHelp displays help about the provided command
 func DisplayHelp(b *Brute, m *discordgo.MessageCreate, c []*Command) {
 	if c == nil || len(c) == 0 {

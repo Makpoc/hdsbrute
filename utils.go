@@ -38,7 +38,7 @@ func GetMembersByRole(s *discordgo.Session, channelId string, roles []string) ([
 
 	for _, member := range guild.Members {
 		for _, role := range member.Roles {
-			if isAllowedRole(GetRoleName(guild, role), roles) {
+			if isAllowedRole(getRoleName(guild, role), roles) {
 				corpMembers = append(corpMembers, member)
 				break // role loop
 			}
@@ -64,10 +64,20 @@ func isAllowedRole(roleName string, allowedRoles []string) bool {
 }
 
 // getRoleName gets the role name from the role ID
-func GetRoleName(guild *discordgo.Guild, roleId string) string {
+func getRoleName(guild *discordgo.Guild, roleId string) string {
 	for _, role := range guild.Roles {
 		if role.ID == roleId {
 			return role.Name
+		}
+	}
+	return ""
+}
+
+// getRoleId gets the role ID from the role name
+func getRoleId(guild *discordgo.Guild, roleName string) string {
+	for _, role := range guild.Roles {
+		if role.Name == roleName {
+			return role.ID
 		}
 	}
 	return ""

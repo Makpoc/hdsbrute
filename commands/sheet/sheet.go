@@ -17,6 +17,7 @@ var SheetCommand = hdsbrute.Command{
 	Cmd:     []string{"sheet"},
 	HelpStr: "Provides the link for the google spreadsheet for Star Grazers",
 	Exec:    handleFunc,
+	Auth:    hdsbrute.GetMemberRoles(),
 }
 
 func handleFunc(b *hdsbrute.Brute, s *discordgo.Session, m *discordgo.MessageCreate, query []string) {

@@ -13,8 +13,6 @@ import (
 	"github.com/makpoc/hdsbrute/commands"
 )
 
-var memberRoles []string
-
 const cmd = "info"
 
 var userAPI commands.UserAPI
@@ -26,17 +24,22 @@ var UserInfoCommand = hdsbrute.Command{
 	Init: func(brute *hdsbrute.Brute) error {
 		userAPI = commands.NewUserApi(brute.Config.BackendURL, brute.Config.Secret)
 
-		envRoles, ok := os.LookupEnv("MEMBER_ROLES")
-		if ok {
-			for _, role := range strings.Split(envRoles, ",") {
-				memberRoles = append(memberRoles, role)
-			}
-		}
-
 		log.Println("UserInfo initialized")
 		return nil
 	},
 	Exec: handleFunc,
+	Auth: getAllowedRoles(),
+}
+
+func getAllowedRoles() []string {
+	var result []string
+	envRoles, ok := os.LookupEnv("MEMBER_ROLES")
+	if ok {
+		for _, role := range strings.Split(envRoles, ",") {
+			result = append(result, role)
+		}
+	}
+	return result
 }
 
 // helpFunc is the function called to display help/usage info
@@ -55,21 +58,6 @@ func helpFunc(b *hdsbrute.Brute, s *discordgo.Session, m *discordgo.MessageCreat
 // handleFunc handles requests for the info command
 func handleFunc(b *hdsbrute.Brute, s *discordgo.Session, m *discordgo.MessageCreate, query []string) {
 	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("`%s%s` is currently disabled. Check `%s%s` for module info", b.Prefix, cmd, b.Prefix, "sheet"))
-}
-
-func findDiscordUser(s *discordgo.Session, m *discordgo.MessageCreate, discordId string) (*discordgo.User, error) {
-	members, err := hdsbrute.GetMembersByRole(s, m.ChannelID, memberRoles)
-	if err != nil {
-		return nil, err
-	}
-
-	discordId = strings.TrimSpace(strings.TrimLeft(strings.TrimRight(discordId, ">"), "<@"))
-	for _, member := range members {
-		if member.User.ID == discordId {
-			return member.User, nil
-		}
-	}
-	return nil, fmt.Errorf("failed to find user with ID: %s", discordId)
 }
 
 func createEmbed(u *models.User, avatarURL string) *discordgo.MessageEmbed {
