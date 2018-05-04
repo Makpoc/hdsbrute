@@ -86,11 +86,11 @@ func (b *Brute) Dispatch(m *discordgo.MessageCreate) {
 	}
 
 	if strings.ToLower(words[0]) == b.Prefix+"help" {
-		b.displayHelp(b.Session, m, words[1:])
+		b.displayHelp(m, words[1:])
 		return
 	}
 
-	cmd := b.findCommand(strings.TrimPrefix(words[0], b.Prefix))
+	cmd := b.findCommand(words)
 	if cmd != nil && cmd.Exec != nil {
 		cmd.Exec(b, b.Session, m, words[1:])
 	}
@@ -119,10 +119,14 @@ func (b *Brute) Close() error {
 	return nil
 }
 
-func (b *Brute) findCommand(query string) *Command {
+func (b *Brute) findCommand(query []string) *Command {
+	if len(query) == 0 {
+		return nil
+	}
+	var q = strings.TrimPrefix(query[0], b.Prefix)
 	for _, c := range b.Commands {
 		for _, cAndAliases := range c.Cmd {
-			if strings.ToLower(query) == strings.ToLower(cAndAliases) {
+			if strings.ToLower(q) == strings.ToLower(cAndAliases) {
 				return &c
 			}
 		}
@@ -130,21 +134,13 @@ func (b *Brute) findCommand(query string) *Command {
 	return nil
 }
 
-func (b *Brute) displayHelp(s *discordgo.Session, m *discordgo.MessageCreate, query []string) {
-	if len(query) == 0 {
-		message := "Supported commands:\n"
-		for _, c := range b.Commands {
-			message = fmt.Sprintf("%s\n`%s%s`", message, b.Prefix, c.Cmd)
-		}
-
-		message = fmt.Sprintf("%s\n\nUse `%shelp [command]` for more info about the concrete command", message, b.Prefix)
-
-		s.ChannelMessageSend(m.ChannelID, message)
-		return
+func (b *Brute) displayHelp(m *discordgo.MessageCreate, query []string) {
+	var commands []*Command
+	cmd := b.findCommand(query)
+	if cmd != nil {
+		commands = append(commands, cmd)
 	}
-
-	cmd := b.findCommand(query[0])
-	DisplayHelp(b, s, m, []*Command{cmd})
+	DisplayHelp(b, m, commands)
 }
 
 // ready will be called when the bot receives the "ready" event from Discord.
