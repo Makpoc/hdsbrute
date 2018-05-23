@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"strings"
@@ -35,12 +36,7 @@ var Command = hdsbrute.Command{
 
 // handleFunc handles requests for the .available command
 func handleFunc(b *hdsbrute.Brute, s *discordgo.Session, m *discordgo.MessageCreate, query []string) {
-	isSingleUserRequest := len(query) > 0
-
 	url := fmt.Sprintf("%s/api/v1/timezones", backendURL)
-	if isSingleUserRequest {
-		url = fmt.Sprintf("%s/%s", url, strings.Join(query, " "))
-	}
 
 	if backendSecret != "" {
 		url = fmt.Sprintf("%s?secret=%s", url, backendSecret)
@@ -64,7 +60,9 @@ func handleFunc(b *hdsbrute.Brute, s *discordgo.Session, m *discordgo.MessageCre
 
 func respondWithAvailables(s *discordgo.Session, m *discordgo.MessageCreate, query []string, body io.Reader) {
 	var timeZones []models.UserTime
-	err := json.NewDecoder(body).Decode(&timeZones)
+	b, err := ioutil.ReadAll(body)
+	log.Printf("%v\n", string(b))
+	err = json.Unmarshal(b, &timeZones)
 	if err != nil {
 		log.Printf("Failed to decode TZ response. Error was: %v\n", err)
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf(":flushed: Failed to get list of available members - %s", err.Error()))
